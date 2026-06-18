@@ -89,7 +89,7 @@ func main() {
 	}
 
 	dockerSvc := service.NewDockerService(dockerCli)
-	metricsSvc := service.NewMetricsService(metricsCollector)
+	metricsSvc := service.NewMetricsService(metricsCollector, time.Now())
 
 	r := api.NewRouter(dockerSvc, metricsSvc)
 

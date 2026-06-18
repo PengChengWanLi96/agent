@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func setupTestRouter() *gin.Engine {
 	collector, _ := metrics.NewCollector()
 
 	dockerSvc := service.NewDockerService(dockerCli)
-	metricsSvc := service.NewMetricsService(collector)
+	metricsSvc := service.NewMetricsService(collector, time.Now())
 
 	return NewRouter(dockerSvc, metricsSvc)
 }

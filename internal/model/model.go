@@ -258,8 +258,20 @@ type SystemMetrics struct {
 	Disk      []DiskMetrics    `json:"disk"`
 	Network   []NetworkMetrics `json:"network"`
 	Load      LoadMetrics      `json:"load"`
-	Uptime    float64          `json:"uptime_seconds"`
 	Timestamp time.Time        `json:"timestamp"`
+}
+
+// MetricsCollectResponse 是 /api/v1/metrics/collect 的专用返回结构。
+// 在 SystemMetrics 基础上增加运行时长字段。
+type MetricsCollectResponse struct {
+	CPU             CPUMetrics       `json:"cpu"`
+	Memory          MemoryMetrics    `json:"memory"`
+	Disk            []DiskMetrics    `json:"disk"`
+	Network         []NetworkMetrics `json:"network"`
+	Load            LoadMetrics      `json:"load"`
+	Timestamp       time.Time        `json:"timestamp"`
+	UptimeSeconds   float64          `json:"uptime_seconds"`
+	UptimeFormatted string           `json:"uptime_formatted"`
 }
 
 type CPUMetrics struct {

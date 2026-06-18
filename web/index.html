@@ -155,7 +155,7 @@
                 html += '<h3>Load</h3>' + renderTable([data.load || {}]);
                 html += '<h3>Disk</h3>' + renderTable(data.disk || []);
                 html += '<h3>Network</h3>' + renderTable(data.network || []);
-                html += `<p><strong>Uptime:</strong> ${data.uptime_seconds ?? '-'} seconds</p>`;
+                html += `<p><strong>Uptime:</strong> ${escapeHtml(data.uptime_formatted ?? '-')} (${data.uptime_seconds ?? '-'} seconds)</p>`;
 
                 resultEl.innerHTML = html;
             } catch (err) {
