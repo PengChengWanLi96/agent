@@ -389,6 +389,7 @@
         function showUploadPanel() {
             document.getElementById('upload-card').style.display = 'block';
             document.getElementById('upload-card').scrollIntoView({ behavior: 'smooth' });
+            resultEl.innerHTML = '<p class="placeholder">在上方选择文件并上传。</p>';
         }
 
         function hideUploadPanel() {
