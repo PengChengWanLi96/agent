@@ -1,0 +1,10 @@
+# Build artifacts
+/agent
+/agent.exe
+/agent-linux-amd64
+
+# IDE files
+.idea/
+
+# Claude local settings
+.claude/
