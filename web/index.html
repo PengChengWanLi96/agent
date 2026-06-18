@@ -40,6 +40,8 @@
         }
         button:hover { background: #1d4ed8; }
         button:disabled { background: #93c5fd; cursor: not-allowed; }
+        button.secondary { background: #e2e8f0; color: #334155; }
+        button.secondary:hover { background: #cbd5e1; }
         .card {
             background: #fff;
             border-radius: 8px;
@@ -52,6 +54,98 @@
             margin: 0 0 16px;
             font-size: 18px;
             color: #444;
+        }
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .form-row label { font-size: 14px; color: #475569; font-weight: 500; }
+        .form-row input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 32px 24px;
+            text-align: center;
+            color: #64748b;
+            position: relative;
+            transition: border-color .2s, background .2s;
+            cursor: pointer;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #2563eb;
+            background: #eff6ff;
+            color: #2563eb;
+        }
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .drop-zone-prompt svg { margin-bottom: 8px; color: #94a3b8; }
+        .drop-zone:hover .drop-zone-prompt svg,
+        .drop-zone.dragover .drop-zone-prompt svg { color: #2563eb; }
+        .drop-zone-prompt p { margin: 4px 0; font-size: 14px; }
+        .drop-zone-prompt .link { color: #2563eb; text-decoration: underline; }
+        .drop-zone-prompt .hint { font-size: 12px; color: #94a3b8; }
+        .file-list {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .file-item .name { color: #334155; word-break: break-all; }
+        .file-item .size { color: #64748b; white-space: nowrap; margin-left: 12px; }
+        .file-item .remove {
+            margin-left: 12px;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .upload-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .upload-result {
+            margin-top: 16px;
+            font-size: 13px;
+        }
+        .upload-result .success { color: #16a34a; }
+        .upload-result .fail { color: #ef4444; }
+        .progress-bar {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: #2563eb;
+            transition: width .2s;
         }
         pre {
             background: #0f172a;
@@ -111,6 +205,33 @@
             <button id="btn-metrics" onclick="loadMetrics()">查看服务器监控指标</button>
             <button id="btn-containers" onclick="loadContainers()">容器列表</button>
             <button id="btn-images" onclick="loadImages()">镜像列表</button>
+            <button id="btn-upload" onclick="showUploadPanel()">文件上传</button>
+        </div>
+
+        <div class="card upload-card" id="upload-card" style="display:none;">
+            <h2>文件上传</h2>
+            <div class="form-row">
+                <label for="upload-dest">目标目录</label>
+                <input type="text" id="upload-dest" placeholder="例如 /tmp/uploads 或 ./uploads" value="./uploads">
+            </div>
+            <div class="drop-zone" id="drop-zone">
+                <div class="drop-zone-prompt">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>拖拽文件到此处，或 <span class="link">点击选择文件</span></p>
+                    <p class="hint">支持多文件上传</p>
+                </div>
+                <input type="file" id="file-input" multiple>
+            </div>
+            <div class="file-list" id="file-list"></div>
+            <div class="upload-actions">
+                <button id="btn-submit-upload" onclick="submitUpload()" disabled>开始上传</button>
+                <button class="secondary" onclick="clearUpload()">清空</button>
+            </div>
+            <div class="upload-result" id="upload-result"></div>
         </div>
 
         <div class="card">
@@ -258,6 +379,118 @@
                 showError(err.message);
             }
         }
+
+        let pendingFiles = [];
+
+        function showUploadPanel() {
+            document.getElementById('upload-card').style.display = 'block';
+            document.getElementById('upload-card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateFileList() {
+            const listEl = document.getElementById('file-list');
+            if (!pendingFiles.length) {
+                listEl.innerHTML = '';
+                document.getElementById('btn-submit-upload').disabled = true;
+                return;
+            }
+            listEl.innerHTML = pendingFiles.map((file, idx) => `
+                <div class="file-item">
+                    <span class="name">${escapeHtml(file.name)}</span>
+                    <span>
+                        <span class="size">${formatBytes(file.size)}</span>
+                        <span class="remove" onclick="removeFile(${idx})">移除</span>
+                    </span>
+                </div>
+            `).join('');
+            document.getElementById('btn-submit-upload').disabled = false;
+        }
+
+        function removeFile(idx) {
+            pendingFiles.splice(idx, 1);
+            updateFileList();
+        }
+
+        function clearUpload() {
+            pendingFiles = [];
+            updateFileList();
+            document.getElementById('upload-result').innerHTML = '';
+            document.getElementById('file-input').value = '';
+        }
+
+        function handleFiles(files) {
+            for (const file of files) {
+                pendingFiles.push(file);
+            }
+            updateFileList();
+        }
+
+        async function submitUpload() {
+            const destDir = document.getElementById('upload-dest').value.trim();
+            if (!destDir) {
+                alert('请填写目标目录');
+                return;
+            }
+            if (!pendingFiles.length) {
+                alert('请先选择文件');
+                return;
+            }
+
+            const resultEl = document.getElementById('upload-result');
+            resultEl.innerHTML = '<p class="placeholder">正在上传...</p>';
+            document.getElementById('btn-submit-upload').disabled = true;
+
+            const formData = new FormData();
+            formData.append('dest_dir', destDir);
+            for (const file of pendingFiles) {
+                formData.append('files', file);
+            }
+
+            try {
+                const res = await fetch('/api/v1/upload/files', { method: 'POST', body: formData });
+                const body = await res.json();
+                if (!res.ok || body.code !== 0) {
+                    throw new Error(body.message || `HTTP ${res.status}`);
+                }
+                const results = body.data || [];
+                const successCount = results.filter(r => r.success).length;
+                const failCount = results.length - successCount;
+
+                let html = `<p><strong>上传完成：</strong>成功 ${successCount} 个，失败 ${failCount} 个</p>`;
+                html += '<ul>' + results.map(r => {
+                    const cls = r.success ? 'success' : 'fail';
+                    const msg = r.success ? formatBytes(r.size) : r.error;
+                    return `<li class="${cls}">${escapeHtml(r.name)}：${escapeHtml(String(msg))}</li>`;
+                }).join('') + '</ul>';
+                resultEl.innerHTML = html;
+
+                if (successCount === results.length) {
+                    pendingFiles = [];
+                    updateFileList();
+                }
+            } catch (err) {
+                resultEl.innerHTML = `<p class="error">上传失败：${escapeHtml(err.message)}</p>`;
+            } finally {
+                document.getElementById('btn-submit-upload').disabled = pendingFiles.length === 0;
+            }
+        }
+
+        (function initUpload() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+            dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files), false);
+            fileInput.addEventListener('change', e => handleFiles(e.target.files), false);
+        })();
     </script>
 </body>
 </html>

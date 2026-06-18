@@ -24,6 +24,13 @@ func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsServ
 		})
 	}
 
+	uploadGroup := r.Group("/api/v1/upload")
+	{
+		uh := NewUploadHandler(service.NewUploadService())
+		uploadGroup.POST("/files", uh.UploadFiles)
+		uploadGroup.GET("/files", uh.ListUploadDir)
+	}
+
 	dockerGroup := r.Group("/api/v1/docker")
 	{
 		dh := NewDockerHandler(dockerSvc)
