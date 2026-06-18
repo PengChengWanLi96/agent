@@ -12,14 +12,13 @@ import (
 
 	"agent/internal/client/docker"
 	"agent/internal/client/metrics"
-	"agent/internal/config"
 	"agent/internal/service"
 )
 
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
-	dockerCli, _ := docker.NewClient(config.DockerConfig{Host: "tcp://localhost:2375"})
+	dockerCli, _ := docker.NewClient("tcp://localhost:2375", false, "")
 	collector, _ := metrics.NewCollector()
 
 	dockerSvc := service.NewDockerService(dockerCli)
@@ -48,8 +47,16 @@ func TestDockerListContainers(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/v1/docker/containers", nil)
 	r.ServeHTTP(w, req)
 
-	// 无 Docker 环境时返回 500，但接口可访问
 	assert.Contains(t, []int{http.StatusOK, http.StatusInternalServerError}, w.Code)
+}
+
+func TestDockerCreateContainerValidation(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/docker/containers", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestDockerInspectContainer(t *testing.T) {
@@ -58,7 +65,6 @@ func TestDockerInspectContainer(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/v1/docker/containers/test-id", nil)
 	r.ServeHTTP(w, req)
 
-	// 由于 docker 客户端连接问题，这里会返回 500，但接口是可访问的
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
@@ -75,6 +81,15 @@ func TestDockerStopContainer(t *testing.T) {
 	r := setupTestRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/api/v1/docker/containers/test-id/stop", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestDockerRestartContainer(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/docker/containers/test-id/restart", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -98,13 +113,84 @@ func TestDockerContainerLogs(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
+func TestDockerListImages(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/v1/docker/images", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Contains(t, []int{http.StatusOK, http.StatusInternalServerError}, w.Code)
+}
+
+func TestDockerPullImageValidation(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/docker/images/pull", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestDockerInspectImage(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/v1/docker/images/test-id", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestDockerRemoveImage(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/api/v1/docker/images/test-id", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestDockerListNetworks(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/v1/docker/networks", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Contains(t, []int{http.StatusOK, http.StatusInternalServerError}, w.Code)
+}
+
+func TestDockerCreateNetworkValidation(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/docker/networks", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestDockerListVolumes(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/v1/docker/volumes", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Contains(t, []int{http.StatusOK, http.StatusInternalServerError}, w.Code)
+}
+
+func TestDockerCreateVolumeValidation(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/docker/volumes", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestMetricsCollect(t *testing.T) {
 	r := setupTestRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/metrics/collect", nil)
 	r.ServeHTTP(w, req)
 
-	// Windows 环境下 metrics collector 会返回错误
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 

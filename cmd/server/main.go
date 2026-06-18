@@ -73,7 +73,7 @@ func main() {
 		cfg.ServerAddr = ":" + strconv.Itoa(port)
 	}
 
-	dockerCli, err := docker.NewClient(cfg.Docker)
+	dockerCli, err := docker.NewClient(cfg.Docker.Host, cfg.Docker.TLSVerify, cfg.Docker.CertPath)
 	if err != nil {
 		log.Fatalf("failed to create docker client: %v", err)
 	}

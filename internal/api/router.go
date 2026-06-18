@@ -3,11 +3,11 @@ package api
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"agent/internal/model"
 	"agent/internal/service"
 	"agent/internal/version"
 	"agent/web"
+	"github.com/gin-gonic/gin"
 )
 
 func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsService) *gin.Engine {
@@ -26,13 +26,42 @@ func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsServ
 
 	dockerGroup := r.Group("/api/v1/docker")
 	{
-		h := NewDockerHandler(dockerSvc)
-		dockerGroup.GET("/containers", h.ListContainers)
-		dockerGroup.GET("/containers/:id", h.InspectContainer)
-		dockerGroup.POST("/containers/:id/start", h.StartContainer)
-		dockerGroup.POST("/containers/:id/stop", h.StopContainer)
-		dockerGroup.DELETE("/containers/:id", h.RemoveContainer)
-		dockerGroup.GET("/containers/:id/logs", h.ContainerLogs)
+		dh := NewDockerHandler(dockerSvc)
+		dockerGroup.GET("/containers", dh.ListContainers)
+		dockerGroup.POST("/containers", dh.CreateContainer)
+		dockerGroup.GET("/containers/:id", dh.InspectContainer)
+		dockerGroup.POST("/containers/:id/start", dh.StartContainer)
+		dockerGroup.POST("/containers/:id/stop", dh.StopContainer)
+		dockerGroup.POST("/containers/:id/restart", dh.RestartContainer)
+		dockerGroup.POST("/containers/:id/kill", dh.KillContainer)
+		dockerGroup.DELETE("/containers/:id", dh.RemoveContainer)
+		dockerGroup.POST("/containers/:id/pause", dh.PauseContainer)
+		dockerGroup.POST("/containers/:id/unpause", dh.UnpauseContainer)
+		dockerGroup.POST("/containers/:id/rename", dh.RenameContainer)
+		dockerGroup.POST("/containers/:id/exec", dh.ExecContainer)
+		dockerGroup.GET("/containers/:id/logs", dh.ContainerLogs)
+		dockerGroup.POST("/containers/prune", dh.PruneContainers)
+
+		ih := NewImageHandler(dockerSvc)
+		dockerGroup.GET("/images", ih.ListImages)
+		dockerGroup.GET("/images/:id", ih.InspectImage)
+		dockerGroup.POST("/images/pull", ih.PullImage)
+		dockerGroup.DELETE("/images/:id", ih.RemoveImage)
+		dockerGroup.POST("/images/prune", ih.PruneImages)
+
+		nh := NewNetworkHandler(dockerSvc)
+		dockerGroup.GET("/networks", nh.ListNetworks)
+		dockerGroup.POST("/networks", nh.CreateNetwork)
+		dockerGroup.DELETE("/networks/:id", nh.RemoveNetwork)
+		dockerGroup.POST("/networks/:id/connect", nh.ConnectNetwork)
+		dockerGroup.POST("/networks/:id/disconnect", nh.DisconnectNetwork)
+		dockerGroup.POST("/networks/prune", nh.PruneNetworks)
+
+		vh := NewVolumeHandler(dockerSvc)
+		dockerGroup.GET("/volumes", vh.ListVolumes)
+		dockerGroup.POST("/volumes", vh.CreateVolume)
+		dockerGroup.DELETE("/volumes/:name", vh.RemoveVolume)
+		dockerGroup.POST("/volumes/prune", vh.PruneVolumes)
 	}
 
 	metricsGroup := r.Group("/api/v1/metrics")
