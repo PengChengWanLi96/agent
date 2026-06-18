@@ -85,6 +85,8 @@
         <div class="toolbar">
             <button id="btn-version" onclick="loadVersion()">查看版本信息</button>
             <button id="btn-metrics" onclick="loadMetrics()">查看服务器监控指标</button>
+            <button id="btn-containers" onclick="loadContainers()">容器列表</button>
+            <button id="btn-images" onclick="loadImages()">镜像列表</button>
         </div>
 
         <div class="card">
@@ -156,6 +158,65 @@
                 html += `<p><strong>Uptime:</strong> ${data.uptime_seconds ?? '-'} seconds</p>`;
 
                 resultEl.innerHTML = html;
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes == null || bytes === 0) return '0 B';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const k = 1024;
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + units[i];
+        }
+
+        function formatContainerNames(names) {
+            if (!Array.isArray(names) || !names.length) return '-';
+            return names.map(n => n.replace(/^\//, '')).join(', ');
+        }
+
+        function formatPorts(ports) {
+            if (!Array.isArray(ports) || !ports.length) return '-';
+            return ports.map(p => {
+                if (p.public_port) {
+                    return `${p.ip || '0.0.0.0'}:${p.public_port} -> ${p.private_port}/${p.type}`;
+                }
+                return `${p.private_port}/${p.type}`;
+            }).join(', ');
+        }
+
+        async function loadContainers() {
+            setLoading('正在加载容器列表...');
+            try {
+                const data = await getJson('/api/v1/docker/containers?all=true');
+                const rows = (data || []).map(c => ({
+                    ID: c.id ? c.id.substring(0, 12) : '-',
+                    Names: formatContainerNames(c.names),
+                    Image: c.image || '-',
+                    State: c.state || '-',
+                    Status: c.status || '-',
+                    Ports: formatPorts(c.ports),
+                    Created: c.created ? new Date(c.created * 1000).toLocaleString() : '-'
+                }));
+                resultEl.innerHTML = `<h3>容器列表（共 ${rows.length} 个）</h3>` + renderTable(rows);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function loadImages() {
+            setLoading('正在加载镜像列表...');
+            try {
+                const data = await getJson('/api/v1/docker/images');
+                const rows = (data || []).map(img => ({
+                    ID: img.id ? img.id.substring(0, 12) : '-',
+                    Repository: (img.repo_tags && img.repo_tags.length) ? img.repo_tags.join(', ') : '<none>',
+                    Size: formatBytes(img.size),
+                    'Virtual Size': formatBytes(img.virtual_size),
+                    Created: img.created ? new Date(img.created * 1000).toLocaleString() : '-'
+                }));
+                resultEl.innerHTML = `<h3>镜像列表（共 ${rows.length} 个）</h3>` + renderTable(rows);
             } catch (err) {
                 showError(err.message);
             }
