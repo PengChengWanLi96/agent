@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ func (s *MetricsService) Collect() (*model.MetricsCollectResponse, error) {
 		Network:         m.Network,
 		Load:            m.Load,
 		Timestamp:       m.Timestamp,
-		UptimeSeconds:   uptime.Seconds(),
+		UptimeSeconds:   math.Round(uptime.Seconds()*1000) / 1000,
 		UptimeFormatted: formatDuration(uptime),
 	}
 	return resp, nil

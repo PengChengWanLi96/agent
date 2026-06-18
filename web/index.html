@@ -46,6 +46,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,.08);
             padding: 20px;
             margin-bottom: 20px;
+            overflow: hidden;
         }
         .card h2 {
             margin: 0 0 16px;
@@ -66,17 +67,40 @@
         }
         .error { color: #ef4444; }
         .placeholder { color: #94a3b8; }
+        .table-wrap {
+            overflow-x: auto;
+            background: #fff;
+            border-radius: 6px;
+        }
         table {
             width: 100%;
+            min-width: 900px;
             border-collapse: collapse;
             font-size: 13px;
         }
         th, td {
             text-align: left;
-            padding: 8px 12px;
+            padding: 10px 12px;
             border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
         }
-        th { background: #f8fafc; color: #64748b; font-weight: 600; }
+        th {
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        td {
+            color: #334155;
+            word-break: break-word;
+        }
+        td.nowrap { white-space: nowrap; }
+        td.id { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        .status-running { color: #16a34a; font-weight: 500; }
+        .status-exited { color: #dc2626; }
+        .status-paused { color: #ca8a04; }
+        .status-restarting { color: #2563eb; }
+        h3 { margin: 16px 0 10px; font-size: 15px; color: #444; }
     </style>
 </head>
 <body>
@@ -123,14 +147,21 @@
             return body.data;
         }
 
-        function renderTable(rows) {
+        function renderTable(rows, options = {}) {
             if (!rows.length) return '<p class="placeholder">无数据</p>';
             const headers = Object.keys(rows[0]);
-            let html = '<table><tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
+            const headerClasses = options.headerClasses || {};
+            const cellClasses = options.cellClasses || {};
+            let html = '<div class="table-wrap"><table><tr>';
+            html += headers.map(h => `<th class="${headerClasses[h] || ''}">${escapeHtml(h)}</th>`).join('');
+            html += '</tr>';
             for (const row of rows) {
-                html += '<tr>' + headers.map(h => `<td>${escapeHtml(String(row[h] ?? ''))}</td>`).join('') + '</tr>';
+                html += '<tr>' + headers.map(h => {
+                    const cls = cellClasses[h] || '';
+                    return `<td class="${cls}">${escapeHtml(String(row[h] ?? ''))}</td>`;
+                }).join('') + '</tr>';
             }
-            html += '</table>';
+            html += '</table></div>';
             return html;
         }
 
@@ -155,7 +186,7 @@
                 html += '<h3>Load</h3>' + renderTable([data.load || {}]);
                 html += '<h3>Disk</h3>' + renderTable(data.disk || []);
                 html += '<h3>Network</h3>' + renderTable(data.network || []);
-                html += `<p><strong>Uptime:</strong> ${escapeHtml(data.uptime_formatted ?? '-')} (${data.uptime_seconds ?? '-'} seconds)</p>`;
+                html += `<p><strong>Uptime:</strong> ${escapeHtml(data.uptime_formatted ?? '-')} (${(data.uptime_seconds ?? 0).toFixed(3)} seconds)</p>`;
 
                 resultEl.innerHTML = html;
             } catch (err) {
@@ -199,7 +230,13 @@
                     Ports: formatPorts(c.ports),
                     Created: c.created ? new Date(c.created * 1000).toLocaleString() : '-'
                 }));
-                resultEl.innerHTML = `<h3>容器列表（共 ${rows.length} 个）</h3>` + renderTable(rows);
+                const cellClasses = {
+                    ID: 'id nowrap',
+                    State: 'nowrap',
+                    Status: 'nowrap',
+                    Created: 'nowrap'
+                };
+                resultEl.innerHTML = `<h3>容器列表（共 ${rows.length} 个）</h3>` + renderTable(rows, { cellClasses });
             } catch (err) {
                 showError(err.message);
             }
