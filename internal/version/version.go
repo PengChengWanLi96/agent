@@ -11,18 +11,29 @@ import (
 //
 //	go build -ldflags "-X agent/internal/version.Version=v1.2.0 \
 //	    -X agent/internal/version.GitCommit=$(git rev-parse --short HEAD) \
-//	    -X agent/internal/version.GitTime=$(git log -1 --format=%cI) \
+//	    -X agent/internal/version.GitTime=$(git log -1 --format=%cI --date=iso-strict) \
 //	    -X agent/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 //	    -o agent ./cmd/server
 //
 // 当使用裸的 go build 时，若模块位于 Git 仓库中，Go 会自动把 VCS 信息写入
-// 二进制（要求 Go 1.18+），本包会从中读取 commit ID 与提交时间作为回退。
+// 二进制（要求 Go 1.18+）。本包统一将 Git 时间与构建时间以 UTC 格式输出。
 var (
 	Version   = "dev"
 	GitCommit = "unknown"
 	GitTime   = "unknown"
 	BuildDate = "unknown"
 )
+
+func normalizeUTC(s string) string {
+	if s == "" || s == "unknown" {
+		return s
+	}
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return s
+	}
+	return t.UTC().Format(time.RFC3339)
+}
 
 func init() {
 	if info, ok := debug.ReadBuildInfo(); ok {
@@ -45,21 +56,28 @@ func init() {
 				GitCommit = revision
 			}
 		}
-		if GitTime == "unknown" && vcsTime != "" {
-			if t, err := time.Parse(time.RFC3339, vcsTime); err == nil {
-				GitTime = t.UTC().Format(time.RFC3339)
+		if vcsTime != "" {
+			t, err := time.Parse(time.RFC3339, vcsTime)
+			if err == nil {
+				if GitTime == "unknown" {
+					GitTime = t.UTC().Format(time.RFC3339)
+				}
+				if BuildDate == "unknown" {
+					BuildDate = t.UTC().Format(time.RFC3339)
+				}
 			} else {
-				GitTime = vcsTime
-			}
-		}
-		if BuildDate == "unknown" && vcsTime != "" {
-			if t, err := time.Parse(time.RFC3339, vcsTime); err == nil {
-				BuildDate = t.UTC().Format(time.RFC3339)
-			} else {
-				BuildDate = vcsTime
+				if GitTime == "unknown" {
+					GitTime = vcsTime
+				}
+				if BuildDate == "unknown" {
+					BuildDate = vcsTime
+				}
 			}
 		}
 	}
+
+	GitTime = normalizeUTC(GitTime)
+	BuildDate = normalizeUTC(BuildDate)
 }
 
 // Info 包含构建与运行时的版本信息。
