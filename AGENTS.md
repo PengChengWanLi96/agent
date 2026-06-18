@@ -10,16 +10,27 @@ Go 1.24 service agent exposing REST APIs for Docker container management and Lin
 
 ## Build & Run
 
+使用**包路径**构建，这样 Go 会自动把 Git 的 commit ID 与构建时间写入二进制，
+`--version` 即可查看（需要 Go 1.18+ 且项目位于 Git 仓库中）。
+
 ```bash
 # Build
- go build -o agent cmd/server/main.go
+ go build -o agent ./cmd/server
 
 # Run (requires Docker socket or remote Docker host)
- go run cmd/server/main.go
+ go run ./cmd/server
 
 # Cross-compile for Linux (metrics only work on Linux)
- GOOS=linux GOARCH=amd64 go build -o agent cmd/server/main.go
+ GOOS=linux GOARCH=amd64 go build -o agent ./cmd/server
+
+# Explicitly inject version info (optional, useful when not building from Git)
+ go build -ldflags "-X agent/internal/version.Version=v1.2.0 \
+     -X agent/internal/version.GitCommit=\$(git rev-parse --short HEAD) \
+     -X agent/internal/version.BuildDate=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     -o agent ./cmd/server
 ```
+
+> 注意：直接通过文件路径构建（如 `go build -o agent cmd/server/main.go`）不会携带 Git VCS 信息。
 
 ## Test
 

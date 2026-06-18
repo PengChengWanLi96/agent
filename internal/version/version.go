@@ -3,6 +3,8 @@ package version
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
+	"time"
 )
 
 // 这些变量可在编译时通过 -ldflags 注入，例如：
@@ -11,11 +13,45 @@ import (
 //	    -X agent/internal/version.GitCommit=$(git rev-parse --short HEAD) \
 //	    -X agent/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 //	    -o agent cmd/server/main.go
+//
+// 当使用裸的 go build 时，若模块位于 Git 仓库中，Go 会自动把 VCS 信息写入
+// 二进制（要求 Go 1.18+），本包会从中读取 commit ID 与构建时间作为回退。
 var (
 	Version   = "dev"
 	GitCommit = "unknown"
 	BuildDate = "unknown"
 )
+
+func init() {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		var (
+			revision string
+			vcsTime  string
+		)
+		for _, s := range info.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				revision = s.Value
+			case "vcs.time":
+				vcsTime = s.Value
+			}
+		}
+		if GitCommit == "unknown" && revision != "" {
+			if len(revision) > 12 {
+				GitCommit = revision[:12]
+			} else {
+				GitCommit = revision
+			}
+		}
+		if BuildDate == "unknown" && vcsTime != "" {
+			if t, err := time.Parse(time.RFC3339, vcsTime); err == nil {
+				BuildDate = t.UTC().Format(time.RFC3339)
+			} else {
+				BuildDate = vcsTime
+			}
+		}
+	}
+}
 
 // Info 包含构建与运行时的版本信息。
 type Info struct {
