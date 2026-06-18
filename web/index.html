@@ -288,6 +288,7 @@
 
         async function loadVersion() {
             setLoading('正在加载版本信息...');
+            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/version');
                 resultEl.innerHTML = `<pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
@@ -298,6 +299,7 @@
 
         async function loadMetrics() {
             setLoading('正在加载监控指标...');
+            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/metrics/collect');
                 let html = '';
@@ -340,6 +342,7 @@
 
         async function loadContainers() {
             setLoading('正在加载容器列表...');
+            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/docker/containers?all=true');
                 const rows = (data || []).map(c => ({
@@ -365,6 +368,7 @@
 
         async function loadImages() {
             setLoading('正在加载镜像列表...');
+            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/docker/images');
                 const rows = (data || []).map(img => ({
@@ -385,6 +389,10 @@
         function showUploadPanel() {
             document.getElementById('upload-card').style.display = 'block';
             document.getElementById('upload-card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideUploadPanel() {
+            document.getElementById('upload-card').style.display = 'none';
         }
 
         function updateFileList() {

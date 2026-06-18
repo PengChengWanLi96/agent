@@ -1,5 +1,72 @@
+### HTTP API 测试文件
+### 适用于 IntelliJ IDEA / GoLand / VS Code (REST Client 插件)
+
 ###
-### 14. 上传文件（multipart/form-data）
+### 1. 健康检查
+GET {{baseUrl}}/health
+
+###
+### 2. 查看版本信息
+GET {{baseUrl}}/api/v1/version
+
+###
+### 3. 列出运行中容器
+GET {{baseUrl}}/api/v1/docker/containers
+
+###
+### 4. 列出所有容器（包含已停止）
+GET {{baseUrl}}/api/v1/docker/containers?all=true
+
+###
+### 5. 查看容器详情
+GET {{baseUrl}}/api/v1/docker/containers/{{containerId}}
+
+###
+### 6. 启动容器
+POST {{baseUrl}}/api/v1/docker/containers/{{containerId}}/start
+
+###
+### 7. 停止容器
+POST {{baseUrl}}/api/v1/docker/containers/{{containerId}}/stop
+
+###
+### 8. 停止容器（指定超时时间）
+POST {{baseUrl}}/api/v1/docker/containers/{{containerId}}/stop?timeout=30
+
+###
+### 9. 删除容器
+DELETE {{baseUrl}}/api/v1/docker/containers/{{containerId}}
+
+###
+### 10. 强制删除容器
+DELETE {{baseUrl}}/api/v1/docker/containers/{{containerId}}?force=true
+
+###
+### 11. 查看容器日志
+GET {{baseUrl}}/api/v1/docker/containers/{{containerId}}/logs
+
+###
+### 12. 查看容器日志（指定行数）
+GET {{baseUrl}}/api/v1/docker/containers/{{containerId}}/logs?tail=50
+
+###
+### 13. 列出镜像
+GET {{baseUrl}}/api/v1/docker/images
+
+###
+### 14. 查看镜像详情
+GET {{baseUrl}}/api/v1/docker/images/{{imageId}}
+
+###
+### 15. 收集系统指标
+GET {{baseUrl}}/api/v1/metrics/collect
+
+###
+### 16. 获取 Prometheus 格式指标
+GET {{baseUrl}}/api/v1/metrics/prometheus
+
+###
+### 17. 上传文件（multipart/form-data）
 POST {{baseUrl}}/api/v1/upload/files
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
@@ -15,5 +82,5 @@ Hello, upload!
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ###
-### 15. 查看上传目录列表
+### 18. 查看上传目录列表
 GET {{baseUrl}}/api/v1/upload/files?dest_dir=/tmp/uploads
