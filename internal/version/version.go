@@ -11,14 +11,16 @@ import (
 //
 //	go build -ldflags "-X agent/internal/version.Version=v1.2.0 \
 //	    -X agent/internal/version.GitCommit=$(git rev-parse --short HEAD) \
+//	    -X agent/internal/version.GitTime=$(git log -1 --format=%cI) \
 //	    -X agent/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-//	    -o agent cmd/server/main.go
+//	    -o agent ./cmd/server
 //
 // 当使用裸的 go build 时，若模块位于 Git 仓库中，Go 会自动把 VCS 信息写入
-// 二进制（要求 Go 1.18+），本包会从中读取 commit ID 与构建时间作为回退。
+// 二进制（要求 Go 1.18+），本包会从中读取 commit ID 与提交时间作为回退。
 var (
 	Version   = "dev"
 	GitCommit = "unknown"
+	GitTime   = "unknown"
 	BuildDate = "unknown"
 )
 
@@ -43,6 +45,13 @@ func init() {
 				GitCommit = revision
 			}
 		}
+		if GitTime == "unknown" && vcsTime != "" {
+			if t, err := time.Parse(time.RFC3339, vcsTime); err == nil {
+				GitTime = t.UTC().Format(time.RFC3339)
+			} else {
+				GitTime = vcsTime
+			}
+		}
 		if BuildDate == "unknown" && vcsTime != "" {
 			if t, err := time.Parse(time.RFC3339, vcsTime); err == nil {
 				BuildDate = t.UTC().Format(time.RFC3339)
@@ -57,6 +66,7 @@ func init() {
 type Info struct {
 	Version   string `json:"version"`
 	GitCommit string `json:"git_commit"`
+	GitTime   string `json:"git_time"`
 	BuildDate string `json:"build_date"`
 	GoVersion string `json:"go_version"`
 	Platform  string `json:"platform"`
@@ -67,6 +77,7 @@ func GetInfo() Info {
 	return Info{
 		Version:   Version,
 		GitCommit: GitCommit,
+		GitTime:   GitTime,
 		BuildDate: BuildDate,
 		GoVersion: runtime.Version(),
 		Platform:  runtime.GOOS + "/" + runtime.GOARCH,
@@ -81,7 +92,7 @@ func Short() string {
 // String 返回包含构建信息的多行版本描述。
 func String() string {
 	return fmt.Sprintf(
-		"agent %s\n  git commit: %s\n  build date: %s\n  go version: %s\n  platform:   %s/%s",
-		Version, GitCommit, BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH,
+		"agent %s\n  git commit: %s\n  git time:   %s\n  build date: %s\n  go version: %s\n  platform:   %s/%s",
+		Version, GitCommit, GitTime, BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH,
 	)
 }

@@ -179,17 +179,55 @@ GOOS=linux GOARCH=arm64 go build -o agent-linux-arm64 cmd/server/main.go
 
 ### 注入版本信息（编译时）
 
-`--version` 输出的版本号、git commit、构建日期可在编译时通过 `-ldflags` 注入：
+`--version` 输出的版本信息可在编译时通过 `-ldflags` 注入。推荐在构建产品包时使用以下命令，把**构建时间**、**git commit ID**、**git 提交时间**写入二进制：
 
 ```bash
+# 本地当前平台
 go build -ldflags "\
   -X agent/internal/version.Version=v1.2.0 \
   -X agent/internal/version.GitCommit=$(git rev-parse --short HEAD) \
+  -X agent/internal/version.GitTime=$(git log -1 --format=%cI) \
   -X agent/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  -o agent cmd/server/main.go
+  -o agent ./cmd/server
+
+# Linux 交叉编译
+GOOS=linux GOARCH=amd64 go build -ldflags "\
+  -X agent/internal/version.Version=v1.2.0 \
+  -X agent/internal/version.GitCommit=$(git rev-parse --short HEAD) \
+  -X agent/internal/version.GitTime=$(git log -1 --format=%cI) \
+  -X agent/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -o agent-linux-amd64 ./cmd/server
 ```
 
-未注入时默认显示 `dev` / `unknown`。
+Windows PowerShell 示例：
+
+```powershell
+$ver = "v1.2.0"
+$commit = git rev-parse --short HEAD
+$gitTime = git log -1 --format=%cI
+$buildDate = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
+go build -ldflags "-X agent/internal/version.Version=$ver -X agent/internal/version.GitCommit=$commit -X agent/internal/version.GitTime=$gitTime -X agent/internal/version.BuildDate=$buildDate" -o agent.exe ./cmd/server
+```
+
+`--version` 输出示例：
+
+```
+agent v1.2.0
+  git commit: a1b2c3d
+  git time:   2026-06-18T06:40:32Z
+  build date: 2026-06-18T06:45:00Z
+  go version: go1.24.3
+  platform:   linux/amd64
+```
+
+| 字段 | 变量名 | 说明 |
+|------|--------|------|
+| 版本号 | `Version` | 产品版本号，如 `v1.2.0` |
+| Git Commit | `GitCommit` | 当前代码的短 commit ID |
+| Git 提交时间 | `GitTime` | 最近一条 commit 的提交时间 |
+| 构建时间 | `BuildDate` | 本次二进制构建的 UTC 时间 |
+
+未注入时，若项目位于 Git 仓库中且使用包路径构建，Go 会自动从 VCS 信息回退填充 `GitCommit` 与 `GitTime`/`BuildDate`（取 git 提交时间）。
 
 ## 运行方式
 
