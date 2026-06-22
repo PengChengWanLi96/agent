@@ -24,8 +24,9 @@ func setupTestRouter() *gin.Engine {
 
 	dockerSvc := service.NewDockerService(dockerCli)
 	metricsSvc := service.NewMetricsService(collector, time.Now())
+	sshSvc := service.NewSSHService()
 
-	return NewRouter(dockerSvc, metricsSvc)
+	return NewRouter(dockerSvc, metricsSvc, sshSvc)
 }
 
 func TestHealthEndpoint(t *testing.T) {
@@ -202,6 +203,33 @@ func TestMetricsPrometheus(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestSSHConnectValidation(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/ssh/connect", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSSHListFilesSessionNotFound(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/v1/ssh/sessions/not-exist/files", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestSSHExecValidation(t *testing.T) {
+	r := setupTestRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/ssh/sessions/not-exist/exec", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func BenchmarkHealthEndpoint(b *testing.B) {

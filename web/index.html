@@ -195,6 +195,176 @@
         .status-paused { color: #ca8a04; }
         .status-restarting { color: #2563eb; }
         h3 { margin: 16px 0 10px; font-size: 15px; color: #444; }
+        .ssh-panel { display: none; }
+        .ssh-workspace {
+            display: flex;
+            gap: 16px;
+            height: 600px;
+            min-height: 400px;
+        }
+        .ssh-file-manager, .ssh-terminal {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .ssh-file-manager { max-width: 50%; }
+        .ssh-terminal { max-width: 50%; }
+        .ssh-section-header {
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .ssh-breadcrumb {
+            padding: 8px 12px;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .ssh-breadcrumb span { cursor: pointer; color: #2563eb; }
+        .ssh-breadcrumb span:hover { text-decoration: underline; }
+        .ssh-file-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .ssh-file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            gap: 10px;
+        }
+        .ssh-file-item:hover { background: #f1f5f9; }
+        .ssh-file-item.selected { background: #dbeafe; }
+        .ssh-file-item .icon { width: 18px; text-align: center; }
+        .ssh-file-item .name { flex: 1; word-break: break-all; }
+        .ssh-file-item .size { color: #64748b; white-space: nowrap; min-width: 70px; text-align: right; }
+        .ssh-file-item .actions { display: none; gap: 8px; }
+        .ssh-file-item:hover .actions { display: flex; }
+        .ssh-file-item .actions span {
+            color: #2563eb;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .ssh-file-item .actions span.danger { color: #ef4444; }
+        .ssh-file-toolbar {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .ssh-file-toolbar button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .ssh-terminal-output {
+            flex: 1;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            overflow-y: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .ssh-terminal-input-line {
+            display: flex;
+            align-items: center;
+            background: #0f172a;
+            padding: 8px 12px;
+            border-top: 1px solid #1e293b;
+        }
+        .ssh-terminal-prompt {
+            color: #4ade80;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 13px;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        .ssh-terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #e2e8f0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 13px;
+        }
+        .ssh-terminal-input:focus { outline: none; }
+        .ssh-form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .ssh-form-row input, .ssh-form-row textarea {
+            flex: 1;
+            min-width: 180px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .ssh-form-row textarea {
+            min-height: 120px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            resize: vertical;
+        }
+        .ssh-status {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+        .ssh-status.connected { color: #16a34a; }
+        .ssh-status.error { color: #ef4444; }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 24px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 8px;
+            max-width: 420px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,.15);
+        }
+        .modal-box h3 { margin: 0 0 16px; }
+        .modal-box input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -206,6 +376,7 @@
             <button id="btn-containers" onclick="loadContainers()">容器列表</button>
             <button id="btn-images" onclick="loadImages()">镜像列表</button>
             <button id="btn-upload" onclick="showUploadPanel()">文件上传</button>
+            <button id="btn-ssh" onclick="showSSHPanel()">SSH 文件管理</button>
         </div>
 
         <div class="card upload-card" id="upload-card" style="display:none;">
@@ -234,10 +405,75 @@
             <div class="upload-result" id="upload-result"></div>
         </div>
 
+        <div class="card ssh-panel" id="ssh-card">
+            <h2>SSH 文件管理</h2>
+            <div id="ssh-connect-form">
+                <div class="ssh-form-row">
+                    <input type="text" id="ssh-host" placeholder="主机地址" value="localhost">
+                    <input type="number" id="ssh-port" placeholder="端口" value="22">
+                    <input type="text" id="ssh-user" placeholder="用户名">
+                </div>
+                <div class="ssh-form-row">
+                    <input type="password" id="ssh-password" placeholder="密码">
+                </div>
+                <div class="ssh-form-row">
+                    <textarea id="ssh-private-key" placeholder="私钥内容（可选，与密码二选一）"></textarea>
+                </div>
+                <div class="upload-actions">
+                    <button id="btn-ssh-connect" onclick="connectSSH()">连接</button>
+                    <button class="secondary" onclick="hideSSHPanel()">取消</button>
+                </div>
+                <div class="ssh-status" id="ssh-status"></div>
+            </div>
+
+            <div id="ssh-workspace" style="display:none; margin-top: 16px;">
+                <div class="ssh-workspace">
+                    <div class="ssh-file-manager">
+                        <div class="ssh-section-header">
+                            <span>SFTP 文件管理</span>
+                            <span id="ssh-session-info" style="font-weight: normal; color: #64748b; font-size: 12px;"></span>
+                        </div>
+                        <div class="ssh-breadcrumb" id="ssh-breadcrumb">/</div>
+                        <div class="ssh-file-toolbar">
+                            <button onclick="sshGoUp()">返回上级</button>
+                            <button onclick="showMkdirModal()">新建目录</button>
+                            <button onclick="showRenameModal()">重命名</button>
+                            <button onclick="triggerSSHUpload()">上传文件</button>
+                            <input type="file" id="ssh-upload-input" style="display:none" onchange="handleSSHUpload(this)">
+                        </div>
+                        <div class="ssh-file-list" id="ssh-file-list"></div>
+                    </div>
+                    <div class="ssh-terminal">
+                        <div class="ssh-section-header">命令行终端</div>
+                        <div class="ssh-terminal-output" id="ssh-terminal-output"></div>
+                        <div class="ssh-terminal-input-line">
+                            <span class="ssh-terminal-prompt">$</span>
+                            <input type="text" class="ssh-terminal-input" id="ssh-terminal-input"
+                                   placeholder="输入命令后按回车执行" onkeydown="handleTerminalKey(event)">
+                        </div>
+                    </div>
+                </div>
+                <div class="upload-actions" style="margin-top: 12px;">
+                    <button class="secondary" onclick="disconnectSSH()">断开连接</button>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <h2>结果</h2>
             <div id="result">
                 <p class="placeholder">点击上方按钮查看对应信息。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="ssh-modal">
+        <div class="modal-box">
+            <h3 id="ssh-modal-title">提示</h3>
+            <input type="text" id="ssh-modal-input" placeholder="">
+            <div class="modal-actions">
+                <button onclick="closeSSHModal()">取消</button>
+                <button onclick="confirmSSHModal()">确定</button>
             </div>
         </div>
     </div>
@@ -500,6 +736,283 @@
             dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files), false);
             fileInput.addEventListener('change', e => handleFiles(e.target.files), false);
         })();
+
+        // ===== SSH File Management =====
+        let sshSession = null;
+        let sshCurrentPath = '/';
+        let sshSelectedFile = null;
+        let sshModalCallback = null;
+
+        function showSSHPanel() {
+            hideUploadPanel();
+            document.getElementById('ssh-card').style.display = 'block';
+            document.getElementById('ssh-card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideSSHPanel() {
+            document.getElementById('ssh-card').style.display = 'none';
+        }
+
+        function setSSHStatus(text, type) {
+            const el = document.getElementById('ssh-status');
+            el.textContent = text;
+            el.className = 'ssh-status' + (type ? ' ' + type : '');
+        }
+
+        async function connectSSH() {
+            const host = document.getElementById('ssh-host').value.trim();
+            const port = parseInt(document.getElementById('ssh-port').value, 10) || 22;
+            const user = document.getElementById('ssh-user').value.trim();
+            const password = document.getElementById('ssh-password').value;
+            const privateKey = document.getElementById('ssh-private-key').value.trim();
+
+            if (!host || !user) {
+                setSSHStatus('请填写主机地址和用户名', 'error');
+                return;
+            }
+            if (!password && !privateKey) {
+                setSSHStatus('请填写密码或私钥', 'error');
+                return;
+            }
+
+            setSSHStatus('正在连接...');
+            document.getElementById('btn-ssh-connect').disabled = true;
+
+            try {
+                const res = await fetch('/api/v1/ssh/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host, port, user, password, private_key: privateKey })
+                });
+                const body = await res.json();
+                if (!res.ok || body.code !== 0) {
+                    throw new Error(body.message || `HTTP ${res.status}`);
+                }
+                sshSession = body.data;
+                sshCurrentPath = '/';
+                setSSHStatus(`已连接到 ${sshSession.host}@${sshSession.user}`, 'connected');
+                document.getElementById('ssh-connect-form').style.display = 'none';
+                document.getElementById('ssh-workspace').style.display = 'block';
+                document.getElementById('ssh-session-info').textContent = `${sshSession.user}@${sshSession.host}`;
+                appendTerminalOutput(`Connected to ${sshSession.user}@${sshSession.host} (session ${sshSession.id.substring(0, 8)})`);
+                await loadSSHFiles();
+            } catch (err) {
+                setSSHStatus(`连接失败：${err.message}`, 'error');
+            } finally {
+                document.getElementById('btn-ssh-connect').disabled = false;
+            }
+        }
+
+        async function disconnectSSH() {
+            if (!sshSession) return;
+            try {
+                await fetch(`/api/v1/ssh/sessions/${sshSession.id}`, { method: 'DELETE' });
+            } catch (e) { }
+            sshSession = null;
+            sshCurrentPath = '/';
+            sshSelectedFile = null;
+            document.getElementById('ssh-connect-form').style.display = 'block';
+            document.getElementById('ssh-workspace').style.display = 'none';
+            document.getElementById('ssh-file-list').innerHTML = '';
+            document.getElementById('ssh-terminal-output').innerHTML = '';
+            setSSHStatus('已断开连接');
+        }
+
+        async function loadSSHFiles() {
+            if (!sshSession) return;
+            const listEl = document.getElementById('ssh-file-list');
+            listEl.innerHTML = '<p class="placeholder">加载中...</p>';
+            try {
+                const data = await getJson(`/api/v1/ssh/sessions/${sshSession.id}/files?path=${encodeURIComponent(sshCurrentPath)}`);
+                renderSSHFiles(data || []);
+                renderSSHBreadcrumb();
+            } catch (err) {
+                listEl.innerHTML = `<p class="error">加载失败：${escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        function renderSSHBreadcrumb() {
+            const parts = sshCurrentPath.split('/').filter(Boolean);
+            let html = '<span onclick="sshNavigateTo(\'/\')">/</span>';
+            let acc = '';
+            for (const part of parts) {
+                acc += '/' + part;
+                html += ` <span>/</span> <span onclick="sshNavigateTo('${acc.replace(/'/g, "\\'")}')">${escapeHtml(part)}</span>`;
+            }
+            document.getElementById('ssh-breadcrumb').innerHTML = html;
+        }
+
+        let _sshCurrentFiles = [];
+        function renderSSHFiles(files) {
+            _sshCurrentFiles = files;
+            const listEl = document.getElementById('ssh-file-list');
+            if (!files.length) {
+                listEl.innerHTML = '<p class="placeholder">空目录</p>';
+                return;
+            }
+            const sorted = [...files].sort((a, b) => (a.is_dir === b.is_dir ? a.name.localeCompare(b.name) : (a.is_dir ? -1 : 1)));
+            listEl.innerHTML = sorted.map(f => `
+                <div class="ssh-file-item ${sshSelectedFile && sshSelectedFile.path === f.path ? 'selected' : ''}"
+                     onclick="sshSelectedFile = ${JSON.stringify(f).replace(/"/g, '&quot;')}; renderSSHFiles(_sshCurrentFiles);"
+                     ondblclick="openSSHFile(${JSON.stringify(f).replace(/"/g, '&quot;')})"
+                >
+                    <span class="icon">${f.is_dir ? '📁' : '📄'}</span>
+                    <span class="name">${escapeHtml(f.name)}</span>
+                    <span class="size">${f.is_dir ? '-' : formatBytes(f.size)}</span>
+                    <span class="actions" onclick="event.stopPropagation()">
+                        ${f.is_dir ? '' : `<span onclick="downloadSSHFile('${f.path.replace(/'/g, "\\'")}')">下载</span>`}
+                        <span onclick="showRenameModal('${f.path.replace(/'/g, "\\'")}', '${f.name.replace(/'/g, "\\'")}')">重命名</span>
+                        <span class="danger" onclick="removeSSHFile('${f.path.replace(/'/g, "\\'")}', ${f.is_dir})">删除</span>
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function openSSHFile(file) {
+            if (file.is_dir) {
+                sshCurrentPath = file.path;
+                sshSelectedFile = null;
+                loadSSHFiles();
+            }
+        }
+
+        function sshNavigateTo(path) {
+            sshCurrentPath = path;
+            sshSelectedFile = null;
+            loadSSHFiles();
+        }
+
+        function sshGoUp() {
+            if (sshCurrentPath === '/') return;
+            const idx = sshCurrentPath.lastIndexOf('/');
+            sshCurrentPath = idx <= 0 ? '/' : sshCurrentPath.substring(0, idx);
+            sshSelectedFile = null;
+            loadSSHFiles();
+        }
+
+        async function downloadSSHFile(filePath) {
+            if (!sshSession) return;
+            window.open(`/api/v1/ssh/sessions/${sshSession.id}/download?path=${encodeURIComponent(filePath)}`, '_blank');
+        }
+
+        async function removeSSHFile(filePath, isDir) {
+            if (!sshSession) return;
+            if (!confirm(`确定要删除 ${isDir ? '目录' : '文件'} ${filePath} 吗？`)) return;
+            try {
+                const res = await fetch(`/api/v1/ssh/sessions/${sshSession.id}/files?path=${encodeURIComponent(filePath)}`, { method: 'DELETE' });
+                const body = await res.json();
+                if (!res.ok || body.code !== 0) throw new Error(body.message || `HTTP ${res.status}`);
+                await loadSSHFiles();
+            } catch (err) {
+                alert('删除失败：' + err.message);
+            }
+        }
+
+        function triggerSSHUpload() {
+            document.getElementById('ssh-upload-input').click();
+        }
+
+        async function handleSSHUpload(input) {
+            if (!sshSession || !input.files.length) return;
+            const file = input.files[0];
+            const destPath = sshCurrentPath === '/' ? '/' + file.name : sshCurrentPath + '/' + file.name;
+            const formData = new FormData();
+            formData.append('path', destPath);
+            formData.append('file', file);
+            try {
+                const res = await fetch(`/api/v1/ssh/sessions/${sshSession.id}/upload`, { method: 'POST', body: formData });
+                const body = await res.json();
+                if (!res.ok || body.code !== 0) throw new Error(body.message || `HTTP ${res.status}`);
+                await loadSSHFiles();
+            } catch (err) {
+                alert('上传失败：' + err.message);
+            } finally {
+                input.value = '';
+            }
+        }
+
+        function showMkdirModal() {
+            document.getElementById('ssh-modal-title').textContent = '新建目录';
+            document.getElementById('ssh-modal-input').value = '';
+            document.getElementById('ssh-modal-input').placeholder = '目录名称';
+            sshModalCallback = async (name) => {
+                if (!name) return;
+                const dirPath = sshCurrentPath === '/' ? '/' + name : sshCurrentPath + '/' + name;
+                try {
+                    const res = await fetch(`/api/v1/ssh/sessions/${sshSession.id}/mkdir?path=${encodeURIComponent(dirPath)}`, { method: 'POST' });
+                    const body = await res.json();
+                    if (!res.ok || body.code !== 0) throw new Error(body.message || `HTTP ${res.status}`);
+                    await loadSSHFiles();
+                } catch (err) {
+                    alert('创建目录失败：' + err.message);
+                }
+            };
+            document.getElementById('ssh-modal').classList.add('active');
+        }
+
+        function showRenameModal(filePath, fileName) {
+            document.getElementById('ssh-modal-title').textContent = '重命名';
+            document.getElementById('ssh-modal-input').value = fileName || (sshSelectedFile ? sshSelectedFile.name : '');
+            document.getElementById('ssh-modal-input').placeholder = '新名称';
+            const oldPath = filePath || (sshSelectedFile ? sshSelectedFile.path : '');
+            sshModalCallback = async (newName) => {
+                if (!newName || !oldPath) return;
+                const parent = oldPath.substring(0, oldPath.lastIndexOf('/')) || '/';
+                const newPath = parent === '/' ? '/' + newName : parent + '/' + newName;
+                try {
+                    const res = await fetch(`/api/v1/ssh/sessions/${sshSession.id}/rename`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ old_path: oldPath, new_path: newPath })
+                    });
+                    const body = await res.json();
+                    if (!res.ok || body.code !== 0) throw new Error(body.message || `HTTP ${res.status}`);
+                    await loadSSHFiles();
+                } catch (err) {
+                    alert('重命名失败：' + err.message);
+                }
+            };
+            document.getElementById('ssh-modal').classList.add('active');
+        }
+
+        function closeSSHModal() {
+            document.getElementById('ssh-modal').classList.remove('active');
+            sshModalCallback = null;
+        }
+
+        function confirmSSHModal() {
+            const value = document.getElementById('ssh-modal-input').value.trim();
+            if (sshModalCallback) sshModalCallback(value);
+            closeSSHModal();
+        }
+
+        function appendTerminalOutput(text, isCommand) {
+            const outputEl = document.getElementById('ssh-terminal-output');
+            const line = document.createElement('div');
+            if (isCommand) {
+                line.innerHTML = `<span style="color:#4ade80;">$</span> ${escapeHtml(text)}`;
+            } else {
+                line.textContent = text;
+            }
+            outputEl.appendChild(line);
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+
+        async function handleTerminalKey(event) {
+            if (event.key !== 'Enter') return;
+            const input = document.getElementById('ssh-terminal-input');
+            const command = input.value.trim();
+            if (!command || !sshSession) return;
+            appendTerminalOutput(command, true);
+            input.value = '';
+            try {
+                const data = await getJson(`/api/v1/ssh/sessions/${sshSession.id}/exec?command=${encodeURIComponent(command)}`);
+                if (data.output) appendTerminalOutput(data.output);
+                if (data.exit_code !== 0) appendTerminalOutput(`(exit code: ${data.exit_code})`);
+            } catch (err) {
+                appendTerminalOutput(`Error: ${err.message}`);
+            }
+        }
     </script>
 </body>
 </html>

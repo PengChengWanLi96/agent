@@ -312,6 +312,46 @@ type LoadMetrics struct {
 	Load15 float64 `json:"load15"`
 }
 
+// ========== SSH File Management Models ==========
+
+type SSHConnectRequest struct {
+	Host       string `json:"host" binding:"required"`
+	Port       int    `json:"port"`
+	User       string `json:"user" binding:"required"`
+	Password   string `json:"password,omitempty"`
+	PrivateKey string `json:"private_key,omitempty"`
+}
+
+type SSHSessionResponse struct {
+	ID        string `json:"id"`
+	Host      string `json:"host"`
+	User      string `json:"user"`
+	CreatedAt int64  `json:"created_at"`
+}
+
+type SSHFileInfo struct {
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Size    int64  `json:"size"`
+	IsDir   bool   `json:"is_dir"`
+	Mode    string `json:"mode"`
+	ModTime int64  `json:"mod_time"`
+}
+
+type SSHExecRequest struct {
+	Command string `json:"command" binding:"required"`
+}
+
+type SSHExecResponse struct {
+	Output   string `json:"output"`
+	ExitCode int    `json:"exit_code"`
+}
+
+type SSHRenameRequest struct {
+	OldPath string `json:"old_path" binding:"required"`
+	NewPath string `json:"new_path" binding:"required"`
+}
+
 // ========== Common Response ==========
 
 type Response struct {

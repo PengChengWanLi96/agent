@@ -4,13 +4,16 @@ go 1.24
 
 require (
 	github.com/docker/docker v24.0.8+incompatible
+	github.com/docker/go-connections v0.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-kit/log v0.2.1
+	github.com/pkg/sftp v1.13.6
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/node_exporter v1.5.0
 	github.com/stretchr/testify v1.8.3
+	golang.org/x/crypto v0.32.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
 
@@ -29,7 +32,6 @@ require (
 	github.com/dennwc/ioctl v1.0.0 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ema/qdisc v0.0.0-20200603082823-62d0308e3e00 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
@@ -50,6 +52,7 @@ require (
 	github.com/jsimonetti/rtnetlink v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lufia/iostat v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
@@ -79,11 +82,10 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.2 // indirect

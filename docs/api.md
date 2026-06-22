@@ -251,6 +251,140 @@ node_memory_MemTotal_bytes 1.6777216e+10
 
 **注意**: 此接口仅在 Linux 平台可用。其他平台返回错误。
 
+---
+
+## SSH 文件管理 API
+
+### 1. 建立 SSH 连接
+
+```
+POST /api/v1/ssh/connect
+```
+
+**请求体**:
+```json
+{
+  "host": "192.168.1.100",
+  "port": 22,
+  "user": "root",
+  "password": "your-password",
+  "private_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n..."
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "a1b2c3d4...",
+    "host": "192.168.1.100",
+    "user": "root",
+    "created_at": 1715769600
+  }
+}
+```
+
+### 2. 列出远程目录
+
+```
+GET /api/v1/ssh/sessions/:id/files?path=/root
+```
+
+**响应示例**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    { "name": "logs", "path": "/root/logs", "size": 0, "is_dir": true, "mode": "drwxr-xr-x", "mod_time": 1715769600 },
+    { "name": "app.tar.gz", "path": "/root/app.tar.gz", "size": 2048, "is_dir": false, "mode": "-rw-r--r--", "mod_time": 1715769500 }
+  ]
+}
+```
+
+### 3. 下载文件
+
+```
+GET /api/v1/ssh/sessions/:id/download?path=/root/app.tar.gz
+```
+
+响应头 `Content-Disposition: attachment`，直接返回文件流。
+
+### 4. 上传文件
+
+```
+POST /api/v1/ssh/sessions/:id/upload
+Content-Type: multipart/form-data
+```
+
+**参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|-----|------|------|------|
+| path | string | 是 | 远程目标路径，如 `/root/app.tar.gz` |
+| file | file | 是 | 要上传的文件 |
+
+### 5. 删除文件或目录
+
+```
+DELETE /api/v1/ssh/sessions/:id/files?path=/root/old.log
+```
+
+### 6. 创建目录
+
+```
+POST /api/v1/ssh/sessions/:id/mkdir?path=/root/newdir
+```
+
+### 7. 重命名
+
+```
+POST /api/v1/ssh/sessions/:id/rename
+```
+
+**请求体**:
+```json
+{
+  "old_path": "/root/oldname",
+  "new_path": "/root/newname"
+}
+```
+
+### 8. 执行命令
+
+```
+POST /api/v1/ssh/sessions/:id/exec
+GET  /api/v1/ssh/sessions/:id/exec?command=ls%20-la
+```
+
+**请求体 (POST)**:
+```json
+{
+  "command": "ls -la"
+}
+```
+
+**响应示例**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "output": "total 32\ndrwxr-xr-x 3 root root 4096 ...",
+    "exit_code": 0
+  }
+}
+```
+
+### 9. 关闭会话
+
+```
+DELETE /api/v1/ssh/sessions/:id
+```
+
+---
+
 ## 错误响应
 
 所有接口在出错时返回如下格式：

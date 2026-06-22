@@ -90,8 +90,9 @@ func main() {
 
 	dockerSvc := service.NewDockerService(dockerCli)
 	metricsSvc := service.NewMetricsService(metricsCollector, time.Now())
+	sshSvc := service.NewSSHService()
 
-	r := api.NewRouter(dockerSvc, metricsSvc)
+	r := api.NewRouter(dockerSvc, metricsSvc, sshSvc)
 
 	srv := &http.Server{
 		Addr:    cfg.ServerAddr,

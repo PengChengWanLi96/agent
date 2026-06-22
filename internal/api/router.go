@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsService) *gin.Engine {
+func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsService, sshSvc *service.SSHService) *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/health", func(c *gin.Context) {
@@ -76,6 +76,22 @@ func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsServ
 		h := NewMetricsHandler(metricsSvc)
 		metricsGroup.GET("/collect", h.Collect)
 		metricsGroup.GET("/prometheus", h.CollectRaw)
+	}
+
+	sshGroup := r.Group("/api/v1/ssh")
+	{
+		h := NewSSHHandler(sshSvc)
+		sshGroup.GET("/sessions", h.ListSessions)
+		sshGroup.POST("/connect", h.Connect)
+		sshGroup.DELETE("/sessions/:id", h.CloseSession)
+		sshGroup.GET("/sessions/:id/files", h.ListFiles)
+		sshGroup.GET("/sessions/:id/download", h.DownloadFile)
+		sshGroup.POST("/sessions/:id/upload", h.UploadFile)
+		sshGroup.DELETE("/sessions/:id/files", h.RemoveFile)
+		sshGroup.POST("/sessions/:id/mkdir", h.Mkdir)
+		sshGroup.POST("/sessions/:id/rename", h.RenameFile)
+		sshGroup.POST("/sessions/:id/exec", h.ExecCommand)
+		sshGroup.GET("/sessions/:id/exec", h.ExecCommandGet)
 	}
 
 	indexHTML, err := web.Content.ReadFile("index.html")
