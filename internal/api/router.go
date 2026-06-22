@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"agent/internal/model"
 	"agent/internal/service"
@@ -102,6 +103,23 @@ func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsServ
 	r.GET("/", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 	})
+
+	staticFiles := []string{"xterm.min.js", "xterm-addon-fit.min.js", "xterm.min.css"}
+	for _, name := range staticFiles {
+		data, err := web.Content.ReadFile(name)
+		if err != nil {
+			panic(err)
+		}
+		mimeType := "application/javascript"
+		if strings.HasSuffix(name, ".css") {
+			mimeType = "text/css"
+		}
+		r.GET("/"+name, func(content []byte, ct string) gin.HandlerFunc {
+			return func(c *gin.Context) {
+				c.Data(http.StatusOK, ct, content)
+			}
+		}(data, mimeType))
+	}
 
 	return r
 }

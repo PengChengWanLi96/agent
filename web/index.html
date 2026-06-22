@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent 管理控制台</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <link rel="stylesheet" href="/xterm.min.css">
+    <script src="/xterm.min.js"></script>
+    <script src="/xterm-addon-fit.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         html, body {
@@ -224,12 +224,10 @@
         .ssh-panel { display: none; }
         .ssh-workspace {
             display: flex;
-            gap: 16px;
             flex: 1;
             min-height: 0;
         }
         .ssh-file-manager, .ssh-terminal {
-            flex: 1;
             display: flex;
             flex-direction: column;
             border: 1px solid #e2e8f0;
@@ -238,8 +236,28 @@
             background: #fff;
             min-width: 0;
         }
-        .ssh-file-manager { max-width: 50%; }
-        .ssh-terminal { max-width: 50%; }
+        .ssh-file-manager {
+            width: 20%;
+            flex-shrink: 0;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none;
+        }
+        .ssh-terminal {
+            flex: 1;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        .ssh-splitter {
+            width: 8px;
+            cursor: col-resize;
+            background: #e2e8f0;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .ssh-splitter:hover { background: #cbd5e1; }
+        .ssh-splitter.dragging { background: #94a3b8; }
         .ssh-section-header {
             padding: 10px 14px;
             background: #f8fafc;
@@ -322,8 +340,13 @@
         .ssh-terminal-container {
             flex: 1;
             background: #0f172a;
-            padding: 8px;
+            padding: 0;
             overflow: hidden;
+            position: relative;
+        }
+        .ssh-terminal-container .terminal {
+            height: 100% !important;
+            width: 100%;
         }
         .ssh-form-row {
             display: flex;
@@ -446,9 +469,9 @@
                 <div class="ssh-status" id="ssh-status"></div>
             </div>
 
-            <div id="ssh-workspace" style="display:none; margin-top: 12px; flex:1; min-height:0; display:flex; flex-direction:column;">
+            <div id="ssh-workspace" style="display:none; margin-top: 12px; flex:1; min-height:0; flex-direction:column;">
                 <div class="ssh-workspace">
-                    <div class="ssh-file-manager">
+                    <div class="ssh-file-manager" id="ssh-file-manager">
                         <div class="ssh-section-header">
                             <span>SFTP 文件管理</span>
                             <span id="ssh-session-info" style="font-weight: normal; color: #64748b; font-size: 12px;"></span>
@@ -463,7 +486,8 @@
                         </div>
                         <div class="ssh-file-list" id="ssh-file-list"></div>
                     </div>
-                    <div class="ssh-terminal">
+                    <div class="ssh-splitter" id="ssh-splitter"></div>
+                    <div class="ssh-terminal" id="ssh-terminal">
                         <div class="ssh-section-header">命令行终端</div>
                         <div class="ssh-terminal-container" id="ssh-terminal-container"></div>
                     </div>
@@ -769,26 +793,66 @@
         let sshSelectedFile = null;
         let sshModalCallback = null;
         let sshTerm = null;
-        let sshFitAddon = null;
         let sshTerminalWS = null;
+
+        function initSplitter() {
+            const splitter = document.getElementById('ssh-splitter');
+            const fileManager = document.getElementById('ssh-file-manager');
+            const workspace = document.querySelector('.ssh-workspace');
+            let isDragging = false;
+
+            splitter.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                splitter.classList.add('dragging');
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const rect = workspace.getBoundingClientRect();
+                let pct = ((e.clientX - rect.left) / rect.width) * 100;
+                pct = Math.max(10, Math.min(80, pct));
+                fileManager.style.width = pct + '%';
+                if (sshTerm) {
+                    sshTerm.fit();
+                    const dims = sshTerm.proposeGeometry();
+                    if (dims && sshTerminalWS && sshTerminalWS.readyState === WebSocket.OPEN) {
+                        sshTerminalWS.send(JSON.stringify({ type: 'resize', rows: dims.rows, cols: dims.cols }));
+                    }
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    splitter.classList.remove('dragging');
+                    document.body.style.userSelect = '';
+                }
+            });
+        }
 
         function initTerminal() {
             if (sshTerm) {
                 sshTerm.dispose();
+                sshTerm = null;
             }
             const container = document.getElementById('ssh-terminal-container');
             container.innerHTML = '';
+
+            if (typeof Terminal === 'undefined') {
+                container.innerHTML = '<p style="color:#ef4444;padding:12px;">终端组件加载失败，请刷新页面。</p>';
+                return;
+            }
+
             sshTerm = new Terminal({
                 cursorBlink: true,
                 fontSize: 13,
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                theme: { background: '#0f172a', foreground: '#e2e8f0', cursor: '#e2e8f0' },
                 convertEol: true,
             });
-            sshFitAddon = new FitAddon.FitAddon();
-            sshTerm.loadAddon(sshFitAddon);
             sshTerm.open(container);
-            sshFitAddon.fit();
+            sshTerm.fit();
 
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             const ws = new WebSocket(`${protocol}//${location.host}/api/v1/ssh/sessions/${sshSession.id}/terminal`);
@@ -796,47 +860,39 @@
             sshTerminalWS = ws;
 
             ws.onopen = () => {
-                sshTerm.onData(data => {
+                sshTerm.on('data', data => {
                     if (ws.readyState === WebSocket.OPEN) {
                         ws.send(data);
                     }
                 });
-                sshTerm.onResize(size => {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'resize', rows: size.rows, cols: size.cols }));
-                    }
-                });
                 window.addEventListener('resize', onTerminalResize);
                 setTimeout(() => {
-                    const dims = sshFitAddon.proposeDimensions();
-                    if (dims) {
+                    if (!sshTerm) return;
+                    sshTerm.fit();
+                    const dims = sshTerm.proposeGeometry();
+                    if (dims && ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'resize', rows: dims.rows, cols: dims.cols }));
                     }
                 }, 100);
             };
 
             ws.onmessage = (event) => {
+                if (!sshTerm) return;
                 if (event.data instanceof ArrayBuffer) {
                     const data = new Uint8Array(event.data);
-                    sshTerm.write(data);
+                    const text = new TextDecoder('utf-8', { fatal: false }).decode(data);
+                    sshTerm.write(text);
                 } else {
-                    try {
-                        const msg = JSON.parse(event.data);
-                        if (msg.type === 'resize') {
-                            sshTerm.resize(msg.cols, msg.rows);
-                        }
-                    } catch (e) {
-                        sshTerm.write(event.data);
-                    }
+                    sshTerm.write(event.data);
                 }
             };
 
             ws.onclose = () => {
-                sshTerm.writeln('\r\n[连接已关闭]');
+                if (sshTerm) sshTerm.writeln('\r\n[连接已关闭]');
             };
 
             ws.onerror = (err) => {
-                sshTerm.writeln('\r\n[终端连接错误]');
+                if (sshTerm) sshTerm.writeln('\r\n[终端连接错误]');
             };
         }
 
@@ -849,14 +905,13 @@
             if (sshTerm) {
                 sshTerm.dispose();
                 sshTerm = null;
-                sshFitAddon = null;
             }
         }
 
         function onTerminalResize() {
-            if (!sshTerm || !sshFitAddon || !sshTerminalWS) return;
-            sshFitAddon.fit();
-            const dims = sshFitAddon.proposeDimensions();
+            if (!sshTerm || !sshTerminalWS) return;
+            sshTerm.fit();
+            const dims = sshTerm.proposeGeometry();
             if (dims && sshTerminalWS.readyState === WebSocket.OPEN) {
                 sshTerminalWS.send(JSON.stringify({ type: 'resize', rows: dims.rows, cols: dims.cols }));
             }
@@ -901,6 +956,7 @@
                 document.getElementById('ssh-workspace').style.display = 'flex';
                 document.getElementById('ssh-session-info').textContent = 'local';
                 await loadSSHFiles();
+                initSplitter();
                 initTerminal();
             } catch (err) {
                 setSSHStatus(`连接失败：${err.message}`, 'error');
@@ -949,6 +1005,7 @@
                 document.getElementById('ssh-workspace').style.display = 'flex';
                 document.getElementById('ssh-session-info').textContent = `${sshSession.user}@${sshSession.host}`;
                 await loadSSHFiles();
+                initSplitter();
                 initTerminal();
             } catch (err) {
                 setSSHStatus(`连接失败：${err.message}`, 'error');
