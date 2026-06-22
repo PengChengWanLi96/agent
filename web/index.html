@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent 管理控制台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
     <style>
         * { box-sizing: border-box; }
         html, body {
@@ -262,6 +265,21 @@
         }
         .ssh-breadcrumb span { cursor: pointer; color: #2563eb; }
         .ssh-breadcrumb span:hover { text-decoration: underline; }
+        .ssh-path-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: #475569;
+            background: #fff;
+            flex-shrink: 0;
+        }
+        .ssh-path-input:focus {
+            outline: none;
+            background: #f8fafc;
+        }
         .ssh-file-list {
             flex: 1;
             overflow-y: auto;
@@ -301,42 +319,11 @@
             padding: 5px 10px;
             font-size: 12px;
         }
-        .ssh-terminal-input-line {
-            display: flex;
-            align-items: center;
-            background: #0f172a;
-            padding: 10px 12px;
-            border-bottom: 1px solid #1e293b;
-            flex-shrink: 0;
-        }
-        .ssh-terminal-prompt {
-            color: #4ade80;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 13px;
-            margin-right: 8px;
-            white-space: nowrap;
-        }
-        .ssh-terminal-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #e2e8f0;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 13px;
-        }
-        .ssh-terminal-input:focus { outline: none; }
-        .ssh-terminal-output {
+        .ssh-terminal-container {
             flex: 1;
             background: #0f172a;
-            color: #e2e8f0;
-            padding: 12px;
-            overflow-y: auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-word;
+            padding: 8px;
+            overflow: hidden;
         }
         .ssh-form-row {
             display: flex;
@@ -466,7 +453,7 @@
                             <span>SFTP 文件管理</span>
                             <span id="ssh-session-info" style="font-weight: normal; color: #64748b; font-size: 12px;"></span>
                         </div>
-                        <div class="ssh-breadcrumb" id="ssh-breadcrumb">/</div>
+                        <input type="text" class="ssh-path-input" id="ssh-path-input" value="/" onkeydown="handleSSHPathKey(event)">
                         <div class="ssh-file-toolbar">
                             <button onclick="sshGoUp()">返回上级</button>
                             <button onclick="showMkdirModal()">新建目录</button>
@@ -478,12 +465,7 @@
                     </div>
                     <div class="ssh-terminal">
                         <div class="ssh-section-header">命令行终端</div>
-                        <div class="ssh-terminal-input-line">
-                            <span class="ssh-terminal-prompt">$</span>
-                            <input type="text" class="ssh-terminal-input" id="ssh-terminal-input"
-                                   placeholder="输入命令后按回车执行" onkeydown="handleTerminalKey(event)">
-                        </div>
-                        <div class="ssh-terminal-output" id="ssh-terminal-output"></div>
+                        <div class="ssh-terminal-container" id="ssh-terminal-container"></div>
                     </div>
                 </div>
                 <div class="upload-actions" style="margin-top: 12px;">
@@ -786,6 +768,99 @@
         let sshCurrentPath = '/';
         let sshSelectedFile = null;
         let sshModalCallback = null;
+        let sshTerm = null;
+        let sshFitAddon = null;
+        let sshTerminalWS = null;
+
+        function initTerminal() {
+            if (sshTerm) {
+                sshTerm.dispose();
+            }
+            const container = document.getElementById('ssh-terminal-container');
+            container.innerHTML = '';
+            sshTerm = new Terminal({
+                cursorBlink: true,
+                fontSize: 13,
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                theme: { background: '#0f172a', foreground: '#e2e8f0', cursor: '#e2e8f0' },
+                convertEol: true,
+            });
+            sshFitAddon = new FitAddon.FitAddon();
+            sshTerm.loadAddon(sshFitAddon);
+            sshTerm.open(container);
+            sshFitAddon.fit();
+
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${location.host}/api/v1/ssh/sessions/${sshSession.id}/terminal`);
+            ws.binaryType = 'arraybuffer';
+            sshTerminalWS = ws;
+
+            ws.onopen = () => {
+                sshTerm.onData(data => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(data);
+                    }
+                });
+                sshTerm.onResize(size => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'resize', rows: size.rows, cols: size.cols }));
+                    }
+                });
+                window.addEventListener('resize', onTerminalResize);
+                setTimeout(() => {
+                    const dims = sshFitAddon.proposeDimensions();
+                    if (dims) {
+                        ws.send(JSON.stringify({ type: 'resize', rows: dims.rows, cols: dims.cols }));
+                    }
+                }, 100);
+            };
+
+            ws.onmessage = (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    const data = new Uint8Array(event.data);
+                    sshTerm.write(data);
+                } else {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'resize') {
+                            sshTerm.resize(msg.cols, msg.rows);
+                        }
+                    } catch (e) {
+                        sshTerm.write(event.data);
+                    }
+                }
+            };
+
+            ws.onclose = () => {
+                sshTerm.writeln('\r\n[连接已关闭]');
+            };
+
+            ws.onerror = (err) => {
+                sshTerm.writeln('\r\n[终端连接错误]');
+            };
+        }
+
+        function closeTerminal() {
+            window.removeEventListener('resize', onTerminalResize);
+            if (sshTerminalWS) {
+                sshTerminalWS.close();
+                sshTerminalWS = null;
+            }
+            if (sshTerm) {
+                sshTerm.dispose();
+                sshTerm = null;
+                sshFitAddon = null;
+            }
+        }
+
+        function onTerminalResize() {
+            if (!sshTerm || !sshFitAddon || !sshTerminalWS) return;
+            sshFitAddon.fit();
+            const dims = sshFitAddon.proposeDimensions();
+            if (dims && sshTerminalWS.readyState === WebSocket.OPEN) {
+                sshTerminalWS.send(JSON.stringify({ type: 'resize', rows: dims.rows, cols: dims.cols }));
+            }
+        }
 
         function showSSHPanel() {
             document.getElementById('ssh-card').style.display = 'flex';
@@ -804,6 +879,7 @@
             document.getElementById('ssh-user').value = '';
             document.getElementById('ssh-password').value = '';
             document.getElementById('ssh-private-key').value = '';
+            document.getElementById('ssh-path-input').value = '/';
             setSSHStatus('');
         }
 
@@ -824,8 +900,8 @@
                 document.getElementById('ssh-connect-form').style.display = 'none';
                 document.getElementById('ssh-workspace').style.display = 'flex';
                 document.getElementById('ssh-session-info').textContent = 'local';
-                appendTerminalOutput('Connected to local machine');
                 await loadSSHFiles();
+                initTerminal();
             } catch (err) {
                 setSSHStatus(`连接失败：${err.message}`, 'error');
             } finally {
@@ -872,8 +948,8 @@
                 document.getElementById('ssh-connect-form').style.display = 'none';
                 document.getElementById('ssh-workspace').style.display = 'flex';
                 document.getElementById('ssh-session-info').textContent = `${sshSession.user}@${sshSession.host}`;
-                appendTerminalOutput(`Connected to ${sshSession.user}@${sshSession.host} (session ${sshSession.id.substring(0, 8)})`);
                 await loadSSHFiles();
+                initTerminal();
             } catch (err) {
                 setSSHStatus(`连接失败：${err.message}`, 'error');
             } finally {
@@ -886,14 +962,14 @@
             try {
                 await fetch(`/api/v1/ssh/sessions/${sshSession.id}`, { method: 'DELETE' });
             } catch (e) { }
+            closeTerminal();
             sshSession = null;
             sshCurrentPath = '/';
             sshSelectedFile = null;
             document.getElementById('ssh-connect-form').style.display = 'block';
             document.getElementById('ssh-workspace').style.display = 'none';
             document.getElementById('ssh-file-list').innerHTML = '';
-            document.getElementById('ssh-terminal-output').innerHTML = '';
-            document.getElementById('ssh-terminal-input').value = '';
+            document.getElementById('ssh-path-input').value = '/';
             setSSHStatus('已断开连接');
         }
 
@@ -911,14 +987,17 @@
         }
 
         function renderSSHBreadcrumb() {
-            const parts = sshCurrentPath.split('/').filter(Boolean);
-            let html = '<span onclick="sshNavigateTo(\'/\')">/</span>';
-            let acc = '';
-            for (const part of parts) {
-                acc += '/' + part;
-                html += ` <span>/</span> <span onclick="sshNavigateTo('${acc.replace(/'/g, "\\'")}')">${escapeHtml(part)}</span>`;
-            }
-            document.getElementById('ssh-breadcrumb').innerHTML = html;
+            document.getElementById('ssh-path-input').value = sshCurrentPath;
+        }
+
+        function handleSSHPathKey(event) {
+            if (event.key !== 'Enter') return;
+            const input = document.getElementById('ssh-path-input');
+            let path = input.value.trim();
+            if (!path) path = '/';
+            sshCurrentPath = path;
+            sshSelectedFile = null;
+            loadSSHFiles();
         }
 
         let _sshCurrentFiles = [];
@@ -1065,33 +1144,6 @@
             closeSSHModal();
         }
 
-        function appendTerminalOutput(text, isCommand) {
-            const outputEl = document.getElementById('ssh-terminal-output');
-            const line = document.createElement('div');
-            if (isCommand) {
-                line.innerHTML = `<span style="color:#4ade80;">$</span> ${escapeHtml(text)}`;
-            } else {
-                line.textContent = text;
-            }
-            outputEl.appendChild(line);
-            outputEl.scrollTop = outputEl.scrollHeight;
-        }
-
-        async function handleTerminalKey(event) {
-            if (event.key !== 'Enter') return;
-            const input = document.getElementById('ssh-terminal-input');
-            const command = input.value.trim();
-            if (!command || !sshSession) return;
-            appendTerminalOutput(command, true);
-            input.value = '';
-            try {
-                const data = await getJson(`/api/v1/ssh/sessions/${sshSession.id}/exec?command=${encodeURIComponent(command)}`);
-                if (data.output) appendTerminalOutput(data.output);
-                if (data.exit_code !== 0) appendTerminalOutput(`(exit code: ${data.exit_code})`);
-            } catch (err) {
-                appendTerminalOutput(`Error: ${err.message}`);
-            }
-        }
     </script>
 </body>
 </html>

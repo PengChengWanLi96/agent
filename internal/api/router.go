@@ -92,6 +92,7 @@ func NewRouter(dockerSvc *service.DockerService, metricsSvc *service.MetricsServ
 		sshGroup.POST("/sessions/:id/rename", h.RenameFile)
 		sshGroup.POST("/sessions/:id/exec", h.ExecCommand)
 		sshGroup.GET("/sessions/:id/exec", h.ExecCommandGet)
+		sshGroup.GET("/sessions/:id/terminal", h.Terminal)
 	}
 
 	indexHTML, err := web.Content.ReadFile("index.html")

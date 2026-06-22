@@ -183,6 +183,22 @@ func (s *SSHService) Exec(sessionID, command string) (string, int, error) {
 	return session.client.Exec(command)
 }
 
+type terminalSession interface {
+	io.ReadWriteCloser
+	Resize(rows, cols int) error
+}
+
+func (s *SSHService) Terminal(id string) (terminalSession, error) {
+	session, err := s.GetSession(id)
+	if err != nil {
+		return nil, err
+	}
+	if session.Local {
+		return newLocalTerminal()
+	}
+	return session.client.Terminal()
+}
+
 // local helpers
 
 func (s *SSHService) localListDir(p string) ([]ssh.FileInfo, error) {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"agent/internal/model"
 	"agent/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type SSHHandler struct {
@@ -250,4 +252,71 @@ func (h *SSHHandler) ExecCommandGet(c *gin.Context) {
 		Output:   output,
 		ExitCode: exitCode,
 	}})
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin:     func(r *http.Request) bool { return true },
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+type terminalResizeMsg struct {
+	Type string `json:"type"`
+	Rows int    `json:"rows"`
+	Cols int    `json:"cols"`
+}
+
+func (h *SSHHandler) Terminal(c *gin.Context) {
+	id := c.Param("id")
+
+	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.Response{Code: 400, Message: err.Error()})
+		return
+	}
+	defer ws.Close()
+
+	term, err := h.svc.Terminal(id)
+	if err != nil {
+		_ = ws.WriteMessage(websocket.TextMessage, []byte("failed to start terminal: "+err.Error()))
+		return
+	}
+	defer term.Close()
+
+	// Send initial size.
+	if err := term.Resize(24, 80); err != nil {
+		// ignore resize errors
+	}
+
+	// Read from terminal and write to WebSocket.
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := term.Read(buf)
+			if n > 0 {
+				_ = ws.WriteMessage(websocket.BinaryMessage, buf[:n])
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	// Read from WebSocket and write to terminal.
+	for {
+		msgType, data, err := ws.ReadMessage()
+		if err != nil {
+			return
+		}
+		if msgType == websocket.TextMessage {
+			var resize terminalResizeMsg
+			if err := json.Unmarshal(data, &resize); err == nil && resize.Type == "resize" {
+				_ = term.Resize(resize.Rows, resize.Cols)
+				continue
+			}
+		}
+		if _, err := term.Write(data); err != nil {
+			return
+		}
+	}
 }

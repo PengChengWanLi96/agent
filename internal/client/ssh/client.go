@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/pkg/sftp"
@@ -172,6 +173,91 @@ func (c *Client) Exec(command string) (string, int, error) {
 		}
 	}
 	return string(output), exitCode, nil
+}
+
+type TerminalSession struct {
+	session  *ssh.Session
+	stdin    io.WriteCloser
+	stdout   io.Reader
+	combined io.Reader
+	closeCh  chan struct{}
+}
+
+func (c *Client) Terminal() (*TerminalSession, error) {
+	session, err := c.client.NewSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          1,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
+	}
+	if err := session.RequestPty("xterm-256color", 24, 80, modes); err != nil {
+		session.Close()
+		return nil, fmt.Errorf("failed to request pty: %w", err)
+	}
+
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		session.Close()
+		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
+	}
+	stdout, err := session.StdoutPipe()
+	if err != nil {
+		session.Close()
+		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+	stderr, err := session.StderrPipe()
+	if err != nil {
+		session.Close()
+		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	pr, pw := io.Pipe()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); io.Copy(pw, stdout) }()
+	go func() { defer wg.Done(); io.Copy(pw, stderr) }()
+	closeCh := make(chan struct{})
+	go func() {
+		wg.Wait()
+		pw.Close()
+		close(closeCh)
+	}()
+
+	if err := session.Shell(); err != nil {
+		session.Close()
+		return nil, fmt.Errorf("failed to start shell: %w", err)
+	}
+
+	return &TerminalSession{
+		session:  session,
+		stdin:    stdin,
+		stdout:   stdout,
+		combined: pr,
+		closeCh:  closeCh,
+	}, nil
+}
+
+func (t *TerminalSession) Read(p []byte) (int, error) {
+	return t.combined.Read(p)
+}
+
+func (t *TerminalSession) Write(p []byte) (int, error) {
+	return t.stdin.Write(p)
+}
+
+func (t *TerminalSession) Close() error {
+	t.stdin.Close()
+	err := t.session.Close()
+	<-t.closeCh
+	return err
+}
+
+func (t *TerminalSession) Resize(rows, cols int) error {
+	return t.session.WindowChange(rows, cols)
 }
 
 type FileInfo struct {
