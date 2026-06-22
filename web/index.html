@@ -6,35 +6,43 @@
     <title>Agent 管理控制台</title>
     <style>
         * { box-sizing: border-box; }
-        body {
+        html, body {
+            height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
-            padding: 24px;
+            padding: 0;
             background: #f5f7fa;
             color: #333;
         }
+        .page {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         .container {
-            max-width: 960px;
-            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 24px 24px;
         }
         h1 {
-            margin: 0 0 24px;
-            font-size: 24px;
+            margin: 0 0 16px;
+            font-size: 22px;
             color: #1a1a1a;
         }
         .toolbar {
             display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
+            gap: 10px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
         }
         button {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border: none;
             border-radius: 6px;
             background: #2563eb;
             color: #fff;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: background .2s;
         }
@@ -46,14 +54,29 @@
             background: #fff;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,.08);
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 16px 20px;
             overflow: hidden;
         }
+        .card.flex {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
         .card h2 {
-            margin: 0 0 16px;
-            font-size: 18px;
+            margin: 0 0 12px;
+            font-size: 16px;
             color: #444;
+        }
+        .result-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .result-card #result {
+            flex: 1;
+            overflow: auto;
         }
         .form-row {
             display: flex;
@@ -199,8 +222,8 @@
         .ssh-workspace {
             display: flex;
             gap: 16px;
-            height: 600px;
-            min-height: 400px;
+            flex: 1;
+            min-height: 0;
         }
         .ssh-file-manager, .ssh-terminal {
             flex: 1;
@@ -210,18 +233,20 @@
             border-radius: 8px;
             overflow: hidden;
             background: #fff;
+            min-width: 0;
         }
         .ssh-file-manager { max-width: 50%; }
         .ssh-terminal { max-width: 50%; }
         .ssh-section-header {
-            padding: 12px 16px;
+            padding: 10px 14px;
             background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
         .ssh-breadcrumb {
             padding: 8px 12px;
@@ -233,6 +258,7 @@
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
         .ssh-breadcrumb span { cursor: pointer; color: #2563eb; }
         .ssh-breadcrumb span:hover { text-decoration: underline; }
@@ -264,34 +290,24 @@
         }
         .ssh-file-item .actions span.danger { color: #ef4444; }
         .ssh-file-toolbar {
-            padding: 10px 12px;
+            padding: 8px 12px;
             border-bottom: 1px solid #e2e8f0;
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
         .ssh-file-toolbar button {
-            padding: 6px 12px;
+            padding: 5px 10px;
             font-size: 12px;
-        }
-        .ssh-terminal-output {
-            flex: 1;
-            background: #0f172a;
-            color: #e2e8f0;
-            padding: 12px;
-            overflow-y: auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-word;
         }
         .ssh-terminal-input-line {
             display: flex;
             align-items: center;
             background: #0f172a;
-            padding: 8px 12px;
-            border-top: 1px solid #1e293b;
+            padding: 10px 12px;
+            border-bottom: 1px solid #1e293b;
+            flex-shrink: 0;
         }
         .ssh-terminal-prompt {
             color: #4ade80;
@@ -310,6 +326,18 @@
             font-size: 13px;
         }
         .ssh-terminal-input:focus { outline: none; }
+        .ssh-terminal-output {
+            flex: 1;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 12px;
+            overflow-y: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
         .ssh-form-row {
             display: flex;
             gap: 12px;
@@ -368,15 +396,16 @@
     </style>
 </head>
 <body>
+    <div class="page">
     <div class="container">
         <h1>Agent 管理控制台</h1>
         <div class="toolbar">
-            <button id="btn-version" onclick="loadVersion()">查看版本信息</button>
-            <button id="btn-metrics" onclick="loadMetrics()">查看服务器监控指标</button>
-            <button id="btn-containers" onclick="loadContainers()">容器列表</button>
-            <button id="btn-images" onclick="loadImages()">镜像列表</button>
-            <button id="btn-upload" onclick="showUploadPanel()">文件上传</button>
-            <button id="btn-ssh" onclick="showSSHPanel()">SSH 文件管理</button>
+            <button id="btn-version" onclick="switchView('version')">查看版本信息</button>
+            <button id="btn-metrics" onclick="switchView('metrics')">查看服务器监控指标</button>
+            <button id="btn-containers" onclick="switchView('containers')">容器列表</button>
+            <button id="btn-images" onclick="switchView('images')">镜像列表</button>
+            <button id="btn-upload" onclick="switchView('upload')">文件上传</button>
+            <button id="btn-ssh" onclick="switchView('ssh')">SSH 文件管理</button>
         </div>
 
         <div class="card upload-card" id="upload-card" style="display:none;">
@@ -405,9 +434,13 @@
             <div class="upload-result" id="upload-result"></div>
         </div>
 
-        <div class="card ssh-panel" id="ssh-card">
+        <div class="card ssh-panel flex" id="ssh-card" style="display:none;">
             <h2>SSH 文件管理</h2>
             <div id="ssh-connect-form">
+                <div class="ssh-form-row">
+                    <button id="btn-ssh-local" onclick="connectLocalSSH()" style="flex:0 0 auto;">连接本机</button>
+                    <span style="color:#64748b; font-size:13px; align-self:center;">或填写下方信息连接其他服务器</span>
+                </div>
                 <div class="ssh-form-row">
                     <input type="text" id="ssh-host" placeholder="主机地址" value="localhost">
                     <input type="number" id="ssh-port" placeholder="端口" value="22">
@@ -426,7 +459,7 @@
                 <div class="ssh-status" id="ssh-status"></div>
             </div>
 
-            <div id="ssh-workspace" style="display:none; margin-top: 16px;">
+            <div id="ssh-workspace" style="display:none; margin-top: 12px; flex:1; min-height:0; display:flex; flex-direction:column;">
                 <div class="ssh-workspace">
                     <div class="ssh-file-manager">
                         <div class="ssh-section-header">
@@ -445,12 +478,12 @@
                     </div>
                     <div class="ssh-terminal">
                         <div class="ssh-section-header">命令行终端</div>
-                        <div class="ssh-terminal-output" id="ssh-terminal-output"></div>
                         <div class="ssh-terminal-input-line">
                             <span class="ssh-terminal-prompt">$</span>
                             <input type="text" class="ssh-terminal-input" id="ssh-terminal-input"
                                    placeholder="输入命令后按回车执行" onkeydown="handleTerminalKey(event)">
                         </div>
+                        <div class="ssh-terminal-output" id="ssh-terminal-output"></div>
                     </div>
                 </div>
                 <div class="upload-actions" style="margin-top: 12px;">
@@ -459,12 +492,13 @@
             </div>
         </div>
 
-        <div class="card">
+        <div class="card result-card" id="result-card">
             <h2>结果</h2>
             <div id="result">
                 <p class="placeholder">点击上方按钮查看对应信息。</p>
             </div>
         </div>
+    </div>
     </div>
 
     <div class="modal-overlay" id="ssh-modal">
@@ -524,7 +558,6 @@
 
         async function loadVersion() {
             setLoading('正在加载版本信息...');
-            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/version');
                 resultEl.innerHTML = `<pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
@@ -535,7 +568,6 @@
 
         async function loadMetrics() {
             setLoading('正在加载监控指标...');
-            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/metrics/collect');
                 let html = '';
@@ -578,7 +610,6 @@
 
         async function loadContainers() {
             setLoading('正在加载容器列表...');
-            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/docker/containers?all=true');
                 const rows = (data || []).map(c => ({
@@ -604,7 +635,6 @@
 
         async function loadImages() {
             setLoading('正在加载镜像列表...');
-            hideUploadPanel();
             try {
                 const data = await getJson('/api/v1/docker/images');
                 const rows = (data || []).map(img => ({
@@ -622,10 +652,24 @@
 
         let pendingFiles = [];
 
+        function switchView(view) {
+            hideUploadPanel();
+            hideSSHPanel();
+            clearResult();
+            if (view === 'version') loadVersion();
+            else if (view === 'metrics') loadMetrics();
+            else if (view === 'containers') loadContainers();
+            else if (view === 'images') loadImages();
+            else if (view === 'upload') showUploadPanel();
+            else if (view === 'ssh') showSSHPanel();
+        }
+
+        function clearResult() {
+            resultEl.innerHTML = '<p class="placeholder">点击上方按钮查看对应信息。</p>';
+        }
+
         function showUploadPanel() {
             document.getElementById('upload-card').style.display = 'block';
-            document.getElementById('upload-card').scrollIntoView({ behavior: 'smooth' });
-            resultEl.innerHTML = '<p class="placeholder">在上方选择文件并上传。</p>';
         }
 
         function hideUploadPanel() {
@@ -744,13 +788,49 @@
         let sshModalCallback = null;
 
         function showSSHPanel() {
-            hideUploadPanel();
-            document.getElementById('ssh-card').style.display = 'block';
-            document.getElementById('ssh-card').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('ssh-card').style.display = 'flex';
         }
 
         function hideSSHPanel() {
             document.getElementById('ssh-card').style.display = 'none';
+            resetSSHForm();
+        }
+
+        function resetSSHForm() {
+            document.getElementById('ssh-connect-form').style.display = 'block';
+            document.getElementById('ssh-workspace').style.display = 'none';
+            document.getElementById('ssh-host').value = 'localhost';
+            document.getElementById('ssh-port').value = '22';
+            document.getElementById('ssh-user').value = '';
+            document.getElementById('ssh-password').value = '';
+            document.getElementById('ssh-private-key').value = '';
+            setSSHStatus('');
+        }
+
+        async function connectLocalSSH() {
+            setSSHStatus('正在连接本机...');
+            document.getElementById('btn-ssh-local').disabled = true;
+            try {
+                const res = await fetch('/api/v1/ssh/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local: true })
+                });
+                const body = await res.json();
+                if (!res.ok || body.code !== 0) throw new Error(body.message || `HTTP ${res.status}`);
+                sshSession = body.data;
+                sshCurrentPath = '/';
+                setSSHStatus('已连接到本机', 'connected');
+                document.getElementById('ssh-connect-form').style.display = 'none';
+                document.getElementById('ssh-workspace').style.display = 'flex';
+                document.getElementById('ssh-session-info').textContent = 'local';
+                appendTerminalOutput('Connected to local machine');
+                await loadSSHFiles();
+            } catch (err) {
+                setSSHStatus(`连接失败：${err.message}`, 'error');
+            } finally {
+                document.getElementById('btn-ssh-local').disabled = false;
+            }
         }
 
         function setSSHStatus(text, type) {
@@ -785,14 +865,12 @@
                     body: JSON.stringify({ host, port, user, password, private_key: privateKey })
                 });
                 const body = await res.json();
-                if (!res.ok || body.code !== 0) {
-                    throw new Error(body.message || `HTTP ${res.status}`);
-                }
+                if (!res.ok || body.code !== 0) throw new Error(body.message || `HTTP ${res.status}`);
                 sshSession = body.data;
                 sshCurrentPath = '/';
                 setSSHStatus(`已连接到 ${sshSession.host}@${sshSession.user}`, 'connected');
                 document.getElementById('ssh-connect-form').style.display = 'none';
-                document.getElementById('ssh-workspace').style.display = 'block';
+                document.getElementById('ssh-workspace').style.display = 'flex';
                 document.getElementById('ssh-session-info').textContent = `${sshSession.user}@${sshSession.host}`;
                 appendTerminalOutput(`Connected to ${sshSession.user}@${sshSession.host} (session ${sshSession.id.substring(0, 8)})`);
                 await loadSSHFiles();
@@ -815,6 +893,7 @@
             document.getElementById('ssh-workspace').style.display = 'none';
             document.getElementById('ssh-file-list').innerHTML = '';
             document.getElementById('ssh-terminal-output').innerHTML = '';
+            document.getElementById('ssh-terminal-input').value = '';
             setSSHStatus('已断开连接');
         }
 

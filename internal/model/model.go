@@ -315,17 +315,19 @@ type LoadMetrics struct {
 // ========== SSH File Management Models ==========
 
 type SSHConnectRequest struct {
-	Host       string `json:"host" binding:"required"`
+	Host       string `json:"host,omitempty"`
 	Port       int    `json:"port"`
-	User       string `json:"user" binding:"required"`
+	User       string `json:"user,omitempty"`
 	Password   string `json:"password,omitempty"`
 	PrivateKey string `json:"private_key,omitempty"`
+	Local      bool   `json:"local,omitempty"`
 }
 
 type SSHSessionResponse struct {
 	ID        string `json:"id"`
 	Host      string `json:"host"`
 	User      string `json:"user"`
+	Local     bool   `json:"local"`
 	CreatedAt int64  `json:"created_at"`
 }
 

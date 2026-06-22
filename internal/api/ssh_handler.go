@@ -34,6 +34,7 @@ func (h *SSHHandler) Connect(c *gin.Context) {
 		User:       req.User,
 		Password:   req.Password,
 		PrivateKey: req.PrivateKey,
+		Local:      req.Local,
 	}
 
 	session, err := h.svc.Connect(opts)
@@ -42,10 +43,15 @@ func (h *SSHHandler) Connect(c *gin.Context) {
 		return
 	}
 
+	host := session.Host
+	if session.Local {
+		host = "local"
+	}
 	c.JSON(http.StatusOK, model.Response{Code: 0, Message: "success", Data: model.SSHSessionResponse{
 		ID:        session.ID,
-		Host:      session.Host,
+		Host:      host,
 		User:      session.User,
+		Local:     session.Local,
 		CreatedAt: session.CreatedAt.Unix(),
 	}})
 }
@@ -54,10 +60,15 @@ func (h *SSHHandler) ListSessions(c *gin.Context) {
 	sessions := h.svc.ListSessions()
 	resp := make([]model.SSHSessionResponse, 0, len(sessions))
 	for _, s := range sessions {
+		host := s.Host
+		if s.Local {
+			host = "local"
+		}
 		resp = append(resp, model.SSHSessionResponse{
 			ID:        s.ID,
-			Host:      s.Host,
+			Host:      host,
 			User:      s.User,
+			Local:     s.Local,
 			CreatedAt: s.CreatedAt.Unix(),
 		})
 	}

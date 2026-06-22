@@ -17,6 +17,7 @@ type ConnectOptions struct {
 	User       string
 	Password   string
 	PrivateKey string
+	Local      bool
 }
 
 type Client struct {
