@@ -233,9 +233,15 @@
             display: flex;
             flex-direction: column;
         }
-        .ssh-panel > h2 {
+        .ssh-panel-header {
             flex-shrink: 0;
-            margin: 0 0 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .ssh-panel-header h2 {
+            margin: 0;
             font-size: 16px;
             color: #444;
         }
@@ -465,7 +471,10 @@
         </div>
 
         <div class="card ssh-panel flex" id="ssh-card">
-            <h2>SSH 文件管理</h2>
+            <div class="ssh-panel-header">
+                <h2>SSH 文件管理</h2>
+                <button class="secondary" onclick="hideSSHPanel()">返回</button>
+            </div>
             <div id="ssh-connect-form">
                 <div class="ssh-form-row">
                     <button id="btn-ssh-local" onclick="connectLocalSSH()" style="flex:0 0 auto;">连接本机</button>
