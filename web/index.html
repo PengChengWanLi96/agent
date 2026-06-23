@@ -649,10 +649,12 @@
             }).join(', ');
         }
 
-        async function loadContainers() {
+        async function loadContainers(state) {
             setLoading('正在加载容器列表...');
             try {
-                const data = await getJson('/api/v1/docker/containers?all=true');
+                const status = state === undefined || state === null ? 'running' : state;
+                const url = status === '' ? '/api/v1/docker/containers?all=true' : `/api/v1/docker/containers?status=${encodeURIComponent(status)}`;
+                const data = await getJson(url);
                 const rows = (data || []).map(c => ({
                     ID: c.id ? c.id.substring(0, 12) : '-',
                     Names: formatContainerNames(c.names),
@@ -668,10 +670,29 @@
                     Status: 'nowrap',
                     Created: 'nowrap'
                 };
-                resultEl.innerHTML = `<h3>容器列表（共 ${rows.length} 个）</h3>` + renderTable(rows, { cellClasses });
+                resultEl.innerHTML = renderContainerFilter(status) + `<h3>容器列表（共 ${rows.length} 个）</h3>` + renderTable(rows, { cellClasses });
             } catch (err) {
                 showError(err.message);
             }
+        }
+
+        function renderContainerFilter(currentState) {
+            const states = [
+                { value: 'running', label: '运行中' },
+                { value: 'exited', label: '已停止' },
+                { value: 'paused', label: '已暂停' },
+                { value: 'restarting', label: '重启中' },
+                { value: 'created', label: '已创建' },
+                { value: 'dead', label: '异常' },
+                { value: '', label: '全部' },
+            ];
+            const options = states.map(s => `<option value="${s.value}" ${s.value === currentState ? 'selected' : ''}>${s.label}</option>`).join('');
+            return `
+                <div class="form-row" style="margin-bottom: 12px;">
+                    <label for="container-state-filter">状态</label>
+                    <select id="container-state-filter" onchange="loadContainers(this.value)">${options}</select>
+                </div>
+            `;
         }
 
         async function loadImages() {

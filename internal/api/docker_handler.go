@@ -22,9 +22,11 @@ func (h *DockerHandler) ListContainers(c *gin.Context) {
 	all, _ := strconv.ParseBool(c.Query("all"))
 
 	filters := make(map[string][]string)
-	if status := c.Query("status"); status != "" {
+	status := c.Query("status")
+	if status != "" {
 		filters["status"] = []string{status}
 	}
+
 	if label := c.Query("label"); label != "" {
 		filters["label"] = []string{label}
 	}
