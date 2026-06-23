@@ -7,6 +7,9 @@
 #   SERVER_ADDR=192.168.1.10:8080 UPLOAD_DIR=/opt/myagent ./scripts/upload-agent.sh
 # ============================================================
 
+# 禁用 MSYS/Cygwin 对 dest_dir 的自动路径转换（避免 /opt/myagent 被转成 D:/...）
+export MSYS2_ARG_CONV_EXCL="dest_dir="
+
 set -e
 
 # 配置变量（可通过环境变量覆盖）
