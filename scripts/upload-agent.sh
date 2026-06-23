@@ -10,7 +10,7 @@
 set -e
 
 # 配置变量（可通过环境变量覆盖）
-SERVER_ADDR="${SERVER_ADDR:-localhost:8080}"
+SERVER_ADDR="${SERVER_ADDR:-172.24.4.42:7777}"
 UPLOAD_DIR="${UPLOAD_DIR:-/opt/myagent}"
 FILE_NAME="${FILE_NAME:-agent}"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -38,19 +38,26 @@ echo "服务器: ${SERVER_ADDR}"
 echo "目标目录: ${UPLOAD_DIR}"
 echo "本地文件: ${FILE_PATH}"
 echo "文件大小: $(du -h "${FILE_PATH}" | cut -f1)"
+echo "请求地址: ${BASE_URL}/api/v1/upload/files"
 echo "========================================"
 echo ""
 
 # 执行上传
-response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+response=$(curl -s -S --connect-timeout 10 --max-time 120 -w "\nHTTP_CODE:%{http_code}" -X POST \
     -F "dest_dir=${UPLOAD_DIR}" \
-    -F "files=@${FILE_PATH};filename=${FILE_NAME}" \
-    "${BASE_URL}/api/v1/upload/files")
+    -F "files=@${FILE_PATH}" \
+    "${BASE_URL}/api/v1/upload/files" 2>/tmp/upload-agent-curl.err) || {
+    echo -e "${RED}上传请求失败，无法连接到 ${BASE_URL}${NC}"
+    if [ -f /tmp/upload-agent-curl.err ]; then
+        cat /tmp/upload-agent-curl.err
+    fi
+    exit 1
+}
 
 http_code=$(echo "$response" | tail -n1 | sed 's/HTTP_CODE://')
 body=$(echo "$response" | sed '$d')
 
-if [ "$http_code" != "200" ]; then
+if [ -z "$http_code" ] || [ "$http_code" != "200" ]; then
     echo -e "${RED}上传失败，HTTP 状态码: ${http_code}${NC}"
     echo "$body"
     exit 1
