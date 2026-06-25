@@ -4,6 +4,7 @@
 /agent-linux-amd64
 /server
 /server.exe
+/dist/
 
 # IDE files
 .idea/
